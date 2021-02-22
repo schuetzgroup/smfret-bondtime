@@ -76,10 +76,10 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
-            Registrator {
+            Sdt.Registrator {
                 id: reg
-                channels: backend.channels
-                dataDir: backend.dataDir
+                dataset: backend.registrationDataset
+                channelRoles: Object.keys(dataset.channels)
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
@@ -112,6 +112,8 @@ ApplicationWindow {
         onTrackOptionsChanged: { track.options = trackOptions }
         filterOptions: filter.options
         onFilterOptionsChanged: { filter.options = filterOptions }
+        registrationLocSettings: reg.locateSettings
+        onRegistrationLocSettingsChanged: { reg.locateSettings = registrationLocSettings }
     }
     Settings {
         id: settings

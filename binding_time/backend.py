@@ -143,6 +143,7 @@ class Backend(QtCore.QObject):
         self._specialDatasets = DatasetCollection(self)
         for k in self._specialKeys:
             self._specialDatasets.append(k)
+        self._regLocSettings = {}
 
     @QtCore.pyqtProperty(QtCore.QVariant, constant=True)
     def datasets(self):
@@ -235,6 +236,25 @@ class Backend(QtCore.QObject):
         self._filterOptions = o
         self.filterOptionsChanged.emit()
 
+    registrationDatasetChanged = QtCore.pyqtSignal()
+
+    @QtCore.pyqtProperty(QtCore.QVariant, notify=registrationDatasetChanged)
+    def registrationDataset(self):
+        return self._specialDatasets.getProperty(0, "dataset")
+
+    registrationLocSettingsChanged = QtCore.pyqtSignal()
+
+    @QtCore.pyqtProperty("QVariantMap", notify=registrationLocSettingsChanged)
+    def registrationLocSettings(self):
+        return self._regLocSettings
+
+    @registrationLocSettings.setter
+    def registrationLocSettings(self, s):
+        if s == self._regLocSettings:
+            return
+        self._regLocSettings = s
+        self.registrationLocSettingsChanged.emit()
+
     @QtCore.pyqtSlot(QtCore.QUrl)
     def save(self, url):
         data = {"channels": self.channels, "data_dir": self._datasets.dataDir,
@@ -243,7 +263,8 @@ class Backend(QtCore.QObject):
                 "loc_options": self.locOptions,
                 "track_options": self.trackOptions,
                 "files": self._datasets.fileLists,
-                "special_files": self._specialDatasets.fileLists}
+                "special_files": self._specialDatasets.fileLists,
+                "registration_loc": self.registrationLocSettings}
 
         ypath = Path(url.toLocalFile())
         with ypath.open("w") as yf:
@@ -290,6 +311,9 @@ class Backend(QtCore.QObject):
             sf = data["special_files"]
             self._specialDatasets.fileLists = {
                 k: sf.get(k, []) for k in self._specialKeys}
+            self.registrationDatasetChanged.emit()
+        if "registration_loc" in data:
+            self.registrationLocSettings = data["registration_loc"]
 
         h5path = ypath.with_suffix(".h5")
         if h5path.exists():
