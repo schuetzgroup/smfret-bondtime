@@ -20,7 +20,7 @@ Item {
             Label { text: "dataset" }
             Sdt.DatasetSelector {
                 id: trackDatasetSel
-                model: backend
+                datasets: backend.datasets
                 editable: false
                 Layout.fillWidth: true
             }

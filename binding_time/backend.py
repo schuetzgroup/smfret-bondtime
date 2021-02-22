@@ -114,17 +114,43 @@ class Filter(QtQuick.QQuickItem):
         return trc[trc["accepted"]]
 
 
-class Backend(gui.DatasetCollection):
+class DatasetCollection(gui.DatasetCollection):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.dataRoles = ["key", "fretImage", "locData"]
         self.DatasetClass = Dataset
-        self._channels = {"acceptor": {"source_id": 0, "roi": None}}
+
+    def makeDataset(self):
+        ret = super().makeDataset()
+        ret.channels = self.parent().channels  # FIXME
+        ret.excitationSeq = self.parent().excitationSeq  # FIXME
+        return ret
+
+
+class Backend(QtCore.QObject):
+    _specialKeys = ["registration"]
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._channels = {"acceptor": {"source_id": 0, "roi": None},
+                          "donor": {"source_id": 0, "roi": None}}
         self._excitationSeq = ""
         self._algo = ""
         self._options = {}
         self._trcOptions = {}
         self._filterOptions = {}
+        self._datasets = DatasetCollection(self)
+        self._specialDatasets = DatasetCollection(self)
+        for k in self._specialKeys:
+            self._specialDatasets.append(k)
+
+    @QtCore.pyqtProperty(QtCore.QVariant, constant=True)
+    def datasets(self):
+        return self._datasets
+
+    @QtCore.pyqtProperty(QtCore.QVariant, constant=True)
+    def specialDatasets(self):
+        return self._specialDatasets
 
     channelsChanged = QtCore.pyqtSignal()
 
@@ -137,8 +163,9 @@ class Backend(gui.DatasetCollection):
         if ch == self._channels:
             return
         self._channels = ch
-        for i in range(self.count):
-            self.getProperty(i, "dataset").channels = ch
+        for ds in self._datasets, self._specialDatasets:
+            for i in range(ds.count):
+                ds.getProperty(i, "dataset").channels = ch
         self.channelsChanged.emit()
 
     excitationSeqChanged = QtCore.pyqtSignal()
@@ -152,8 +179,8 @@ class Backend(gui.DatasetCollection):
         if seq == self.excitationSeq:
             return
         self._excitationSeq = seq
-        for i in range(self.count):
-            self.getProperty(i, "dataset").excitationSeq = seq
+        for i in range(self._datasets.count):
+            self._datasets.getProperty(i, "dataset").excitationSeq = seq
         self.excitationSeqChanged.emit()
 
     locAlgorithmChanged = QtCore.pyqtSignal()
@@ -210,11 +237,13 @@ class Backend(gui.DatasetCollection):
 
     @QtCore.pyqtSlot(QtCore.QUrl)
     def save(self, url):
-        data = {"channels": self.channels, "data_dir": self.dataDir,
+        data = {"channels": self.channels, "data_dir": self._datasets.dataDir,
                 "excitation_seq": self.excitationSeq,
                 "loc_algorithm": self.locAlgorithm,
                 "loc_options": self.locOptions,
-                "track_options": self.trackOptions, "files": self.fileLists}
+                "track_options": self.trackOptions,
+                "files": self._datasets.fileLists,
+                "special_files": self._specialDatasets.fileLists}
 
         ypath = Path(url.toLocalFile())
         with ypath.open("w") as yf:
@@ -222,9 +251,9 @@ class Backend(gui.DatasetCollection):
 
         import tables, warnings
         with pd.HDFStore(ypath.with_suffix(".h5"), "w") as s:
-            for i in range(self.rowCount()):
-                ekey = self.getProperty(i, "key")
-                dset = self.getProperty(i, "dataset")
+            for i in range(self._datasets.rowCount()):
+                ekey = self._datasets.getProperty(i, "key")
+                dset = self._datasets.getProperty(i, "dataset")
                 for j in range(dset.rowCount()):
                     dkey = dset.getProperty(j, "key")
                     ld = dset.getProperty(j, "locData")
@@ -245,7 +274,8 @@ class Backend(gui.DatasetCollection):
         if "channels" in data:
             self.channels = data["channels"]
         if "data_dir" in data:
-            self.dataDir = data["data_dir"]
+            self._datasets.dataDir = data["data_dir"]
+            self._specialDatasets.dataDir = data["data_dir"]
         if "excitation_seq" in data:
             self.excitationSeq = data["excitation_seq"]
         if "loc_algorithm" in data:
@@ -255,25 +285,23 @@ class Backend(gui.DatasetCollection):
         if "track_options" in data:
             self.trackOptions = data["track_options"]
         if "files" in data:
-            self.fileLists = data["files"]
+            self._datasets.fileLists = data["files"]
+        if "special_files" in data:
+            sf = data["special_files"]
+            self._specialDatasets.fileLists = {
+                k: sf.get(k, []) for k in self._specialKeys}
 
         h5path = ypath.with_suffix(".h5")
         if h5path.exists():
             with pd.HDFStore(h5path, "r") as s:
-                for i in range(self.rowCount()):
-                    ekey = self.getProperty(i, "key")
-                    dset = self.getProperty(i, "dataset")
+                for i in range(self._datasets.rowCount()):
+                    ekey = self._datasets.getProperty(i, "key")
+                    dset = self._datasets.getProperty(i, "dataset")
                     for j in range(dset.rowCount()):
                         dkey = dset.getProperty(j, "key")
                         with contextlib.suppress(KeyError):
                             dset.setProperty(j, "locData",
                                              s.get(f"/{ekey}/{dkey}"))
-
-    def makeDataset(self):
-        ret = super().makeDataset()
-        ret.channels = self.channels
-        ret.excitationSeq = self.excitationSeq
-        return ret
 
     @QtCore.pyqtSlot(result=QtCore.QVariant)
     def getLocateFunc(self):

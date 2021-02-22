@@ -34,8 +34,7 @@ T.Filter {
             Label { text: "dataset" }
             Sdt.DatasetSelector {
                 id: datasetSel
-                model: backend
-                editable: false
+                datasets: backend.datasets
                 Layout.fillWidth: true
             }
             Item { width: 20 }

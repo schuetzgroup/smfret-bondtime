@@ -70,7 +70,8 @@ ApplicationWindow {
             }
             Sdt.MultiDataCollector {
                 id: dataCollector
-                datasets: backend
+                datasets: backend.datasets
+                specialDatasets: backend.specialDatasets
                 sourceNames: channelConfig.sourceCount
                 Layout.fillWidth: true
                 Layout.fillHeight: true

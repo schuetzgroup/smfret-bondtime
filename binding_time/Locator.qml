@@ -22,8 +22,7 @@ Item {
             Label { text: "dataset" }
             Sdt.DatasetSelector {
                 id: locDatasetSel
-                model: backend
-                editable: false
+                datasets: backend.datasets
                 Layout.fillWidth: true
             }
             Item { width: 20 }
