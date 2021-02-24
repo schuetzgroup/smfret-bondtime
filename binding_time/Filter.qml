@@ -8,6 +8,8 @@ import BindingTime.Templates 1.0 as T
 T.Filter {
     id: root
 
+    property alias datasets: datasetSel.datasets
+
     Binding on options { value: rootLayout.options }
     onOptionsChanged: {
         filterInitialCheck.checked = options.filter_initial
@@ -34,16 +36,15 @@ T.Filter {
             Label { text: "dataset" }
             Sdt.DatasetSelector {
                 id: datasetSel
-                datasets: backend.datasets
                 Layout.fillWidth: true
             }
-            Item { width: 20 }
+            Item { width: 5 }
             Sdt.ImageSelector {
                 id: imSel
                 editable: false
                 dataset: datasetSel.currentDataset
                 textRole: "key"
-                imageRole: "fretImage"
+                imageRole: "corrAcceptor"
                 Layout.fillWidth: true
             }
         }

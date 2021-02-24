@@ -56,7 +56,10 @@ ApplicationWindow {
                 Sdt.FrameSelector {
                     id: frameSel
                     showTypeSelector: false
-                    excitationSeq: backend.excitationSeq
+                    excitationSeq: backend.datasets.excitationSeq
+                    onExcitationSeqChanged: {
+                        backend.datasets.excitationSeq = excitationSeq
+                    }
                     Layout.fillWidth: true
                 }
                 Item { height: 5 }
@@ -64,8 +67,11 @@ ApplicationWindow {
                     id: channelConfig
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    channels: backend.channels
-                    onChannelsModified: { backend.channels = channels }
+                    channels: backend.datasets.channels
+                    onChannelsModified: {
+                        backend.datasets.channels = channels
+                        backend.specialDatasets.channels = channels
+                    }
                 }
             }
             Sdt.MultiDataCollector {
@@ -80,22 +86,35 @@ ApplicationWindow {
                 id: reg
                 dataset: backend.registrationDataset
                 channelRoles: Object.keys(dataset.channels)
+                registrator: backend.datasets.registrator
+                onRegistratorChanged: { backend.datasets.registrator = registrator }
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
-            Item {}
+            BleedThrough {
+                id: bt
+                background: backend.datasets.background
+                onBackgroundChanged: { backend.datasets.background = background }
+                bleedThrough: backend.datasets.bleedThrough
+                onBleedThroughChanged: { backend.datasets.bleedThrough = bleedThrough }
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+            }
             Locator {
                 id: loc
+                datasets: backend.datasets
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
             Tracker {
                 id: track
+                datasets: backend.datasets
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
             Filter {
                 id: filter
+                datasets: backend.datasets
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
@@ -103,7 +122,6 @@ ApplicationWindow {
     }
     Backend {
         id: backend
-        excitationSeq: frameSel.excitationSeq
         locAlgorithm: loc.algorithm
         onLocAlgorithmChanged: { loc.algorithm = locAlgorithm }
         locOptions: loc.options

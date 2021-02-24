@@ -7,6 +7,7 @@ import SdtGui 1.0 as Sdt
 Item {
     id: root
 
+    property alias datasets: trackDatasetSel.datasets
     property alias options: track.options
 
     implicitWidth: rootLayout.implicitWidth
@@ -20,7 +21,6 @@ Item {
             Label { text: "dataset" }
             Sdt.DatasetSelector {
                 id: trackDatasetSel
-                datasets: backend.datasets
                 editable: false
                 Layout.fillWidth: true
             }
@@ -30,7 +30,7 @@ Item {
                 editable: false
                 dataset: trackDatasetSel.currentDataset
                 textRole: "key"
-                imageRole: "fretImage"
+                imageRole: "corrAcceptor"
                 Layout.fillWidth: true
             }
         }

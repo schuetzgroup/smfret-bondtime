@@ -7,6 +7,7 @@ import SdtGui 1.0 as Sdt
 Item {
     id: root
 
+    property alias datasets: locDatasetSel.datasets
     property alias algorithm: loc.algorithm
     property alias options: loc.options
     property alias previewEnabled: loc.previewEnabled
@@ -22,7 +23,6 @@ Item {
             Label { text: "dataset" }
             Sdt.DatasetSelector {
                 id: locDatasetSel
-                datasets: backend.datasets
                 Layout.fillWidth: true
             }
             Item { width: 20 }
@@ -31,7 +31,7 @@ Item {
                 editable: false
                 dataset: locDatasetSel.currentDataset
                 textRole: "key"
-                imageRole: "fretImage"
+                imageRole: "corrAcceptor"
                 Layout.fillWidth: true
             }
         }
