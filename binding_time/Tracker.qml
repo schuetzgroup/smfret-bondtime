@@ -64,4 +64,31 @@ Item {
             }
         }
     }
+    Dialog {
+        id: trackBatchDialog
+        title: "Tracking…"
+        anchors.centerIn: parent
+        closePolicy: Popup.NoAutoClose
+        modal: true
+        footer: DialogButtonBox {
+            Button {
+                text: (trackBatchWorker.progress == trackBatchWorker.count ?
+                       "OK" : "Abort")
+                DialogButtonBox.buttonRole: (
+                    trackBatchWorker.progress == trackBatchWorker.count ?
+                    DialogButtonBox.AcceptRole : DialogButtonBox.RejectRole
+                )
+            }
+        }
+
+        Sdt.BatchWorker {
+            id: trackBatchWorker
+            anchors.fill: parent
+            dataset: root.datasets
+            argRoles: ["locData"]
+            resultRole: "locData"
+        }
+
+        onRejected: { trackBatchWorker.abort() }
+    }
 }

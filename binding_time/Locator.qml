@@ -64,4 +64,29 @@ Item {
             }
         }
     }
+    Dialog {
+        id: batchDialog
+        title: "Locating…"
+        anchors.centerIn: parent
+        closePolicy: Popup.NoAutoClose
+        modal: true
+        footer: DialogButtonBox {
+            Button {
+                text: batchWorker.progress == batchWorker.count ? "OK" : "Abort"
+                DialogButtonBox.buttonRole: (batchWorker.progress == batchWorker.count ?
+                                             DialogButtonBox.AcceptRole :
+                                             DialogButtonBox.RejectRole)
+            }
+        }
+
+        Sdt.BatchWorker {
+            id: batchWorker
+            anchors.fill: parent
+            dataset: root.datasets
+            argRoles: ["corrAcceptor"]
+            resultRole: "locData"
+        }
+
+        onRejected: { batchWorker.abort() }
+    }
 }

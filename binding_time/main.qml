@@ -139,58 +139,6 @@ ApplicationWindow {
         property int width: 640
         property int height: 400
     }
-    Dialog {
-        id: batchDialog
-        title: "Locating…"
-        anchors.centerIn: parent
-        closePolicy: Popup.NoAutoClose
-        modal: true
-        footer: DialogButtonBox {
-            Button {
-                text: batchWorker.progress == batchWorker.count ? "OK" : "Abort"
-                DialogButtonBox.buttonRole: (batchWorker.progress == batchWorker.count ?
-                                             DialogButtonBox.AcceptRole :
-                                             DialogButtonBox.RejectRole)
-            }
-        }
-
-        Sdt.BatchWorker {
-            id: batchWorker
-            anchors.fill: parent
-            dataset: backend
-            argRoles: ["fretImage"]
-            resultRole: "locData"
-        }
-
-        onRejected: { batchWorker.abort() }
-    }
-    Dialog {
-        id: trackBatchDialog
-        title: "Tracking…"
-        anchors.centerIn: parent
-        closePolicy: Popup.NoAutoClose
-        modal: true
-        footer: DialogButtonBox {
-            Button {
-                text: (trackBatchWorker.progress == trackBatchWorker.count ?
-                       "OK" : "Abort")
-                DialogButtonBox.buttonRole: (
-                    trackBatchWorker.progress == trackBatchWorker.count ?
-                    DialogButtonBox.AcceptRole : DialogButtonBox.RejectRole
-                )
-            }
-        }
-
-        Sdt.BatchWorker {
-            id: trackBatchWorker
-            anchors.fill: parent
-            dataset: backend
-            argRoles: ["locData"]
-            resultRole: "locData"
-        }
-
-        onRejected: { trackBatchWorker.abort() }
-    }
     QQDialogs.FileDialog {
         id: saveFileDialog
         selectMultiple: false
