@@ -437,8 +437,8 @@ class Backend(QtCore.QObject):
         return a * np.exp(-k * x)
 
     @staticmethod
-    def lifetimeModel(t_frame, t_off, c_bleach):
-        return 1 / (1 / t_off + 1 / (c_bleach * t_frame) )
+    def lifetimeModel(t_frame, t_off, t_bleach):
+        return 1 / (1 / t_off + 1 / (t_bleach * t_frame))
 
     @QtCore.pyqtSlot(QtCore.QVariant, int, int, bool, result=float)
     def getResults(self, figureCanvas, ignoreFirst, minCount, fitRates):
@@ -501,21 +501,31 @@ class Backend(QtCore.QObject):
 
         times = np.array([x[0] for x in res])
         rates = np.array([x[-1][1] for x in res])
-        #t_off, c_bleach = scipy.optimize.curve_fit(
-        #    self.lifetimeModel, times, 1 / rates, p0=[4, 30])[0]
-        #t_off2, c_bleach2 = scipy.optimize.curve_fit(
-        #    self.rateModel, times, rates, p0=[4, 30])[0]
 
-        c_bleach, k_off = np.polyfit(1 / times, rates, 1)
+        k_bleach, k_off = np.polyfit(1 / times, rates, 1)
 
-        rateAx = fig.add_subplot(grid[1])
-        rateAx.scatter(1 / times, rates)
-        rateAx.set_title("measured off-rates")
-        rateAx.set_xlabel("frame rate [fps]")
-        rateAx.set_ylabel("apparent off-rate [$s^{-1}$]")
-        x_r = np.array([1 / times[-1], 1 / times[0]])
-        y_r = k_off + c_bleach * x_r
-        rateAx.plot(x_r, y_r, "C0")
+        if fitRates:
+            rateAx = fig.add_subplot(grid[1])
+            rateAx.scatter(1 / times, rates)
+            rateAx.set_title("measured off-rates")
+            rateAx.set_xlabel("frame rate [fps]")
+            rateAx.set_ylabel("apparent off-rate [s$^{-1}$]")
+            x_r = np.array([1 / times[-1], 1 / times[0]])
+            y_r = k_off + k_bleach * x_r
+            rateAx.plot(x_r, y_r, "C0")
+        else:
+            t_off, t_bleach = scipy.optimize.curve_fit(
+                self.lifetimeModel, times, 1 / rates,
+                p0=[1 / k_off, 1 / k_bleach])[0]
+            timeAx = fig.add_subplot(grid[1])
+            timeAx.scatter(times * 1000, 1 / rates)
+            timeAx.set_title("measured lifetimes")
+            timeAx.set_xlabel("time per frame [ms]")
+            timeAx.set_ylabel("apparent lifetime [s]")
+            x_t = np.linspace(times[0], times[-1], 100)
+            y_t = self.lifetimeModel(x_t, t_off, t_bleach)
+            timeAx.plot(x_t * 1000, y_t, "C0")
+            k_off = 1 / t_off
 
         figureCanvas.draw_idle()
 
