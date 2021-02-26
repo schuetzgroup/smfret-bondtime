@@ -5,6 +5,8 @@ import SdtGui 1.0 as Sdt
 
 
 Item {
+    id: root
+
     implicitWidth: rootLayout.implicitWidth
     implicitHeight: rootLayout.implicitHeight
 
@@ -50,14 +52,15 @@ Item {
                 }
                 GroupBox {
                     id: resultValueGroup
-                    property real kOff
-
-                    Binding on kOff {
-                        when: root.visible
-                        value: root.visible, backend.getResults(
+                    property real kOff: {
+                        if (root.visible) {
+                        backend.getResults(
                             resultCanvas, ignoreFirstSel.value, minCountSel.value,
                             fitRatesButton.checked
                         )
+                        } else {
+                            NaN
+                        }
                     }
 
                     title: "Results"
