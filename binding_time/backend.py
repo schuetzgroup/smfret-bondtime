@@ -72,7 +72,10 @@ class Dataset(gui.Dataset):
     background = gui.SimpleQtProperty(float, comp=math.isclose)
     bleedThrough = gui.SimpleQtProperty(float, comp=math.isclose)
 
+    @QtCore.pyqtSlot(int, str, result=QtCore.QVariant)
     def getProperty(self, index, role):
+        if not (0 <= index <= self.rowCount() and role in self.roles):
+            return None
         if role == "key":
             return "; ".join(str(self.getProperty(index, r))
                              for r in self.fileRoles)
@@ -206,21 +209,13 @@ class Filter(QtQuick.QQuickItem):
         super().__init__(parent)
         self._options = {}
 
-    optionsChanged = QtCore.pyqtSignal()
+    options = gui.SimpleQtProperty("QVariantMap")
 
-    @QtCore.pyqtProperty("QVariantMap", notify=optionsChanged)
-    def options(self):
-        return self._options
-
-    @options.setter
-    def options(self, o):
-        if o == self._options:
+    @QtCore.pyqtSlot(QtCore.QVariant, QtCore.QVariant, result=QtCore.QVariant)
+    def filterTracks(self, trc, imageSeq):
+        if imageSeq is None:
             return
-        self._options = o
-        self.optionsChanged.emit()
-
-    @QtCore.pyqtSlot(QtCore.QVariant, int, result=QtCore.QVariant)
-    def filterTracks(self, trc, n_frames):
+        n_frames = len(imageSeq)
         if trc is None:
             return None
         trc["accepted"] = True
@@ -241,6 +236,10 @@ class Filter(QtQuick.QQuickItem):
             bad_p = bad_p.index[bad_p.to_numpy()]
             trc.loc[trc["particle"].isin(bad_p), "accepted"] = False
         return trc[trc["accepted"]]
+
+    @QtCore.pyqtSlot(result=QtCore.QVariant)
+    def _getFilterFunc(self):
+        return self.filterTracks
 
 
 class Backend(QtCore.QObject):

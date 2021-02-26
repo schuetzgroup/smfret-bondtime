@@ -91,17 +91,16 @@ T.Filter {
                 Item { Layout.fillHeight: true }
                 Switch {
                     text: "Show tracks"
-                    checked: trackDisp.visible
+                    checked: true
                     onCheckedChanged: { trackDisp.visible = checked }
                 }
                 Button {
                     text: "Filter all…"
                     Layout.fillWidth: true
-                    /*onClicked: {
-                        trackBatchWorker.func = track.getTrackFunc()
-                        trackBatchWorker.start()
-                        trackBatchDialog.open()
-                    }*/
+                    onClicked: {
+                        batchWorker.start()
+                        batchDialog.open()
+                    }
                 }
             }
             Sdt.ImageDisplay {
@@ -109,9 +108,9 @@ T.Filter {
                 input: imSel.output
                 overlays: Sdt.TrackDisplay {
                     id: trackDisp
-                    trackData: root.options, filterTracks(
+                    trackData: root.options, root.filterTracks(
                         imSel.dataset.getProperty(imSel.currentIndex, "locData"),
-                        imSel.currentFrameCount
+                        imSel.dataset.getProperty(imSel.currentIndex, "corrAcceptor")
                     )
                     currentFrame: imSel.currentFrame
                 }
@@ -119,5 +118,31 @@ T.Filter {
                 Layout.fillHeight: true
             }
         }
+    }
+
+    Dialog {
+        id: batchDialog
+        title: "Filtering…"
+        anchors.centerIn: parent
+        closePolicy: Popup.NoAutoClose
+        modal: true
+        footer: DialogButtonBox {
+            Button {
+                text: batchWorker.progress == batchWorker.count ? "OK" : "Abort"
+                DialogButtonBox.buttonRole: (batchWorker.progress == batchWorker.count ?
+                                             DialogButtonBox.AcceptRole :
+                                             DialogButtonBox.RejectRole)
+            }
+        }
+
+        Sdt.BatchWorker {
+            id: batchWorker
+            anchors.fill: parent
+            dataset: root.datasets
+            func: root._getFilterFunc()
+            argRoles: ["locData", "corrAcceptor"]
+        }
+
+        onRejected: { batchWorker.abort() }
     }
 }
