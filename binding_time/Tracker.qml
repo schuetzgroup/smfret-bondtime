@@ -7,8 +7,14 @@ import SdtGui 1.0 as Sdt
 Item {
     id: root
 
-    property alias datasets: trackDatasetSel.datasets
+    property var datasets
     property alias options: track.options
+    property Item overlays: Sdt.TrackDisplay {
+        trackData: track.trackData
+        currentFrame: previewFrameNumber
+    }
+    property var previewData: null
+    property int previewFrameNumber: -1
 
     implicitWidth: rootLayout.implicitWidth
     implicitHeight: rootLayout.implicitHeight
@@ -17,57 +23,28 @@ Item {
         id: rootLayout
 
         anchors.fill: parent
-        RowLayout {
-            Label { text: "dataset" }
-            Sdt.DatasetSelector {
-                id: trackDatasetSel
-                editable: false
-                Layout.fillWidth: true
-            }
-            Item { width: 20 }
-            Sdt.ImageSelector {
-                id: trackImSel
-                editable: false
-                dataset: trackDatasetSel.currentDataset
-                textRole: "key"
-                imageRole: "corrAcceptor"
-                Layout.fillWidth: true
-            }
+
+        Sdt.TrackOptions {
+            id: track
+            locData: root.previewData
+            Layout.alignment: Qt.AlignTop
+            Layout.fillWidth: true
         }
-        RowLayout {
-            ColumnLayout {
-                Sdt.TrackOptions {
-                    id: track
-                    locData: trackImSel.dataset.getProperty(trackImSel.currentIndex, "locData")
-                    Layout.alignment: Qt.AlignTop
-                }
-                Item { Layout.fillHeight: true }
-                Button {
-                    text: "Track all…"
-                    Layout.fillWidth: true
-                    onClicked: {
-                        trackBatchWorker.func = track.getTrackFunc()
-                        trackBatchWorker.start()
-                        trackBatchDialog.open()
-                    }
-                }
-            }
-            Sdt.ImageDisplay {
-                id: trackImDisp
-                input: trackImSel.output
-                overlays: Sdt.TrackDisplay {
-                    trackData: track.trackData
-                    currentFrame: trackImSel.currentFrame
-                }
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+        Item { Layout.fillHeight: true }
+        Button {
+            text: "Track all…"
+            Layout.fillWidth: true
+            onClicked: {
+                trackBatchWorker.func = track.getTrackFunc()
+                trackBatchWorker.start()
+                trackBatchDialog.open()
             }
         }
     }
     Dialog {
         id: trackBatchDialog
         title: "Tracking…"
-        anchors.centerIn: parent
+        anchors.centerIn: Overlay.overlay
         closePolicy: Popup.NoAutoClose
         modal: true
         footer: DialogButtonBox {

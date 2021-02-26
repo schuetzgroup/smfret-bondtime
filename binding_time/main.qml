@@ -8,14 +8,14 @@ import BindingTime 1.0
 
 
 ApplicationWindow {
-    id: root
+    id: window
     visible: true
     title: "FRET lifetime analyzer"
 
     property alias backend: backend
 
     ColumnLayout {
-        id: rootLayout
+        id: windowLayout
         anchors.fill: parent
         anchors.margins: 5
 
@@ -50,7 +50,15 @@ ApplicationWindow {
         }
 
         StackLayout {
-            currentIndex: actionTab.currentIndex
+            currentIndex: {
+                var idx = actionTab.currentIndex
+                if (idx <= 2)
+                    idx
+                else if ((3 <= idx) && (idx <= 6))
+                    3
+                else if (idx >= 7)
+                    idx - 3
+            }
 
             ColumnLayout {
                 Sdt.FrameSelector {
@@ -91,32 +99,91 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
-            BleedThrough {
-                id: bt
-                background: backend.datasets.background
-                onBackgroundChanged: { backend.datasets.background = background }
-                bleedThrough: backend.datasets.bleedThrough
-                onBleedThroughChanged: { backend.datasets.bleedThrough = bleedThrough }
+            Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-            }
-            Locator {
-                id: loc
-                datasets: backend.datasets
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-            }
-            Tracker {
-                id: track
-                datasets: backend.datasets
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-            }
-            Filter {
-                id: filter
-                datasets: backend.datasets
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+
+                RowLayout {
+                    anchors.fill: parent
+
+                    StackLayout {
+                        id: previewStack
+
+                        property var indexMap: {
+                            3: 0,  // bleed-through
+                            4: 1,  // locate
+                            5: 2,  // track
+                            6: 3,  // filter
+                        }
+                        property Item currentItem: itemAt(currentIndex)
+
+                        currentIndex: indexMap[actionTab.currentIndex] || 0
+
+                        BleedThrough {
+                            id: bt
+                            background: backend.datasets.background
+                            onBackgroundChanged: { backend.datasets.background = background }
+                            bleedThrough: backend.datasets.bleedThrough
+                            onBleedThroughChanged: { backend.datasets.bleedThrough = bleedThrough }
+                        }
+                        Locator {
+                            id: loc
+                            datasets: backend.datasets
+                            previewImage: visible ? imSel.output : null
+                        }
+                        Tracker {
+                            id: track
+                            datasets: backend.datasets
+                            previewData: (
+                                visible ?
+                                imSel.dataset.getProperty(imSel.currentIndex, "locData") :
+                                null
+                            )
+                            previewFrameNumber: imSel.currentFrame
+                        }
+                        Filter {
+                            id: filter
+                            datasets: backend.datasets
+                            previewData: (
+                                visible ?
+                                imSel.dataset.getProperty(imSel.currentIndex, "locData") :
+                                null
+                            )
+                            previewFrameNumber: imSel.currentFrame
+                            previewImageSequence: (
+                                visible ?
+                                imSel.dataset.getProperty(imSel.currentIndex, "corrAcceptor") :
+                                null
+                            )
+                        }
+                    }
+                    Item { width: 2 }
+                    ColumnLayout {
+                        RowLayout {
+                            Label { text: "dataset" }
+                            Sdt.DatasetSelector {
+                                id: datasetSel
+                                datasets: backend.datasets
+                            }
+                            Item { width: 5 }
+                            Sdt.ImageSelector {
+                                id: imSel
+                                editable: false
+                                dataset: datasetSel.currentDataset
+                                textRole: "key"
+                                imageRole: previewStack.currentItem.imageRole || "corrAcceptor"
+                                Layout.fillWidth: true
+                            }
+                        }
+                        Sdt.ImageDisplay {
+                            id: imDisp
+                            input: imSel.output
+                            overlays: previewStack.currentItem.overlays || []
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                        }
+                    }
+                }
             }
             Results {
                 id: results

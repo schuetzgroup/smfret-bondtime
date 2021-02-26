@@ -8,7 +8,15 @@ import BindingTime.Templates 1.0 as T
 T.Filter {
     id: root
 
-    property alias datasets: datasetSel.datasets
+    property var datasets
+    property var previewData: null
+    property var previewImageSequence: null
+    property int previewFrameNumber: -1
+    property var overlays: Sdt.TrackDisplay {
+        id: trackDisp
+        trackData: options, filterTracks(previewData, previewImageSequence)
+        currentFrame: previewFrameNumber
+    }
 
     Binding on options { value: rootLayout.options }
     onOptionsChanged: {
@@ -32,90 +40,56 @@ T.Filter {
         }
 
         anchors.fill: parent
+
+        Switch {
+            id: filterInitialCheck
+            text: "remove initially present tracks"
+            checked: true
+        }
+        Switch {
+            id: filterTerminalCheck
+            text: "remove terminally present tracks"
+            checked: true
+        }
         RowLayout {
-            Label { text: "dataset" }
-            Sdt.DatasetSelector {
-                id: datasetSel
+            Label {
+                text: "mean bg"
                 Layout.fillWidth: true
             }
-            Item { width: 5 }
-            Sdt.ImageSelector {
-                id: imSel
-                editable: false
-                dataset: datasetSel.currentDataset
-                textRole: "key"
-                imageRole: "corrAcceptor"
-                Layout.fillWidth: true
+            Label { text: "<" }
+            Sdt.EditableSpinBox {
+                id: bgThreshSel
+                from: 0
+                to: Sdt.Common.intMax
+                stepSize: 10
             }
         }
         RowLayout {
-            ColumnLayout {
-                Switch {
-                    id: filterInitialCheck
-                    text: "Remove initially present tracks"
-                    checked: true
-                }
-                Switch {
-                    id: filterTerminalCheck
-                    text: "Remove terminally present tracks"
-                    checked: true
-                }
-                RowLayout {
-                    Label {
-                        text: "mean bg"
-                        Layout.fillWidth: true
-                    }
-                    Label { text: "<" }
-                    Sdt.EditableSpinBox {
-                        id: bgThreshSel
-                        from: 0
-                        to: Sdt.Common.intMax
-                        // decimals: 0
-                        stepSize: 10
-                    }
-                }
-                RowLayout {
-                    Label {
-                        text: "mean mass"
-                        Layout.fillWidth: true
-                    }
-                    Label { text: ">" }
-                    Sdt.EditableSpinBox {
-                        id: massThreshSel
-                        from: 0
-                        to: Sdt.Common.intMax
-                        // decimals: 0
-                        stepSize: 100
-                    }
-                }
-                Item { Layout.fillHeight: true }
-                Switch {
-                    text: "Show tracks"
-                    checked: true
-                    onCheckedChanged: { trackDisp.visible = checked }
-                }
-                Button {
-                    text: "Filter all…"
-                    Layout.fillWidth: true
-                    onClicked: {
-                        batchWorker.start()
-                        batchDialog.open()
-                    }
-                }
-            }
-            Sdt.ImageDisplay {
-                id: imDisp
-                input: imSel.output
-                overlays: Sdt.TrackDisplay {
-                    id: trackDisp
-                    trackData: root.options, root.filterTracks(
-                        imSel.dataset.getProperty(imSel.currentIndex, "locData"),
-                        imSel.dataset.getProperty(imSel.currentIndex, "corrAcceptor")
-                    )
-                    currentFrame: imSel.currentFrame
-                }
+            Label {
+                text: "mean mass"
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+            }
+            Label { text: ">" }
+            Sdt.EditableSpinBox {
+                id: massThreshSel
+                from: 0
+                to: Sdt.Common.intMax
+                // decimals: 0
+                stepSize: 100
+            }
+        }
+        Item { Layout.fillHeight: true }
+        Switch {
+            text: "Show tracks"
+            checked: true
+            onCheckedChanged: { trackDisp.visible = checked }
+        }
+        Button {
+            text: "Filter all…"
+            Layout.fillWidth: true
+            onClicked: {
+                batchWorker.start()
+                batchDialog.open()
             }
         }
     }
@@ -123,7 +97,7 @@ T.Filter {
     Dialog {
         id: batchDialog
         title: "Filtering…"
-        anchors.centerIn: parent
+        anchors.centerIn: Overlay.overlay
         closePolicy: Popup.NoAutoClose
         modal: true
         footer: DialogButtonBox {

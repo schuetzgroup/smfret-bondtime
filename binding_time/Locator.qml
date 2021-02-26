@@ -7,10 +7,12 @@ import SdtGui 1.0 as Sdt
 Item {
     id: root
 
-    property alias datasets: locDatasetSel.datasets
+    property var datasets
     property alias algorithm: loc.algorithm
     property alias options: loc.options
     property alias previewEnabled: loc.previewEnabled
+    property Item overlays: Sdt.LocDisplay { locData: loc.locData }
+    property var previewImage: null
 
     implicitWidth: rootLayout.implicitWidth
     implicitHeight: rootLayout.implicitHeight
@@ -19,55 +21,27 @@ Item {
         id: rootLayout
 
         anchors.fill: parent
-        RowLayout {
-            Label { text: "dataset" }
-            Sdt.DatasetSelector {
-                id: locDatasetSel
-                Layout.fillWidth: true
-            }
-            Item { width: 20 }
-            Sdt.ImageSelector {
-                id: imSel
-                editable: false
-                dataset: locDatasetSel.currentDataset
-                textRole: "key"
-                imageRole: "corrAcceptor"
-                Layout.fillWidth: true
-            }
+
+        Sdt.LocateOptions {
+            id: loc
+            input: previewImage
+            Layout.alignment: Qt.AlignTop
+            Layout.fillHeight: true
         }
-        RowLayout {
-            ColumnLayout {
-                Sdt.LocateOptions {
-                    id: loc
-                    input: imSel.output
-                    Layout.alignment: Qt.AlignTop
-                    Layout.fillHeight: true
-                }
-                Button {
-                    text: "Locate all…"
-                    Layout.fillWidth: true
-                    onClicked: {
-                        batchWorker.func = backend.getLocateFunc()
-                        batchWorker.start()
-                        batchDialog.open()
-                    }
-                }
-            }
-            Sdt.ImageDisplay {
-                id: imDisp
-                input: imSel.output
-                overlays: Sdt.LocDisplay {
-                    locData: loc.locData
-                }
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+        Button {
+            text: "Locate all…"
+            Layout.fillWidth: true
+            onClicked: {
+                batchWorker.func = backend.getLocateFunc()
+                batchWorker.start()
+                batchDialog.open()
             }
         }
     }
     Dialog {
         id: batchDialog
         title: "Locating…"
-        anchors.centerIn: parent
+        anchors.centerIn: Overlay.overlay
         closePolicy: Popup.NoAutoClose
         modal: true
         footer: DialogButtonBox {
