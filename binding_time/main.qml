@@ -118,6 +118,11 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
+            Results {
+                id: results
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+            }
         }
     }
     Backend {

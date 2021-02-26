@@ -5,6 +5,7 @@ from pathlib import Path
 from PyQt5 import QtCore, QtQuick
 import numpy as np
 import pandas as pd
+import scipy.optimize
 from sdt import brightness, gui, helper, io, loc, multicolor
 
 
@@ -430,3 +431,92 @@ class Backend(QtCore.QObject):
             return lc
 
         return locFunc
+
+    @staticmethod
+    def survivalModel(x, a, k):
+        return a * np.exp(-k * x)
+
+    @staticmethod
+    def lifetimeModel(t_frame, t_off, c_bleach):
+        return 1 / (1 / t_off + 1 / (c_bleach * t_frame) )
+
+    @QtCore.pyqtSlot(QtCore.QVariant, int, int, bool, result=float)
+    def getResults(self, figureCanvas, ignoreFirst, minCount, fitRates):
+        if not self._datasets.rowCount():
+            return np.NaN
+
+        res = []
+        for i in range(self._datasets.rowCount()):
+            time = int(self._datasets.getProperty(i, "key")) / 1000
+            ds = self._datasets.getProperty(i, "dataset")
+
+            frameCounts = []
+            for j in range(ds.rowCount()):
+                df = ds.getProperty(j, "locData")
+                df = df[df["accepted"]]
+                fc = df.groupby("particle")["frame"].apply(np.ptp)
+                if not fc.empty:
+                    # Exclude empty as they have float dtype, which does not
+                    # work with np.bincount
+                    frameCounts.append(fc)
+            frameCounts = np.concatenate(frameCounts)
+            y = np.bincount(frameCounts)
+            y = np.cumsum(y[::-1])[::-1]  # survival function
+            x = np.arange(1, len(y) + 1) * time
+            use = np.ones(len(x), dtype=bool)
+            use[:ignoreFirst] = False
+            use[y < minCount] = False
+
+            fit_x = x[use]
+            fit_y = y[use]
+            # estimate amplitude as number of events
+            a = fit_y[0]
+            # estimate 1 / rate as mean of survival times
+            m = np.sum(fit_x * fit_y) / np.sum(fit_y)
+            fit = scipy.optimize.curve_fit(
+                self.survivalModel, fit_x, fit_y, p0=[a, 1 / m])[0]
+            res.append((time, x, y, use, fit))
+
+        res = sorted(res, key=lambda x: x[0])
+
+        fig = figureCanvas.figure
+        fig.clf()
+        fig.set_constrained_layout(True)
+        grid = fig.add_gridspec(2, 1)
+
+        survAx = fig.add_subplot(grid[0])
+        for i, (t, x, y, use, fit) in enumerate(res):
+            color = f"C{i%10}"
+            survAx.scatter(x[use], y[use], marker="o", edgecolor="none",
+                           facecolor=color, alpha=0.5)
+            survAx.scatter(x[~use], y[~use], marker="o", edgecolor=color,
+                           facecolor="none", alpha=0.5)
+            x_fit = np.linspace(x[0], x[-1], 100)
+            survAx.plot(x_fit, self.survivalModel(x_fit, *fit), color=color,
+                        label=f"{t*1000:.0f} ms ({1 / t:.1f} fps)")
+        survAx.legend(loc=0)
+        survAx.set_title("survival functions")
+        survAx.set_xlabel("survival time [s]")
+        survAx.set_ylabel("cumulated count")
+
+        times = np.array([x[0] for x in res])
+        rates = np.array([x[-1][1] for x in res])
+        #t_off, c_bleach = scipy.optimize.curve_fit(
+        #    self.lifetimeModel, times, 1 / rates, p0=[4, 30])[0]
+        #t_off2, c_bleach2 = scipy.optimize.curve_fit(
+        #    self.rateModel, times, rates, p0=[4, 30])[0]
+
+        c_bleach, k_off = np.polyfit(1 / times, rates, 1)
+
+        rateAx = fig.add_subplot(grid[1])
+        rateAx.scatter(1 / times, rates)
+        rateAx.set_title("measured off-rates")
+        rateAx.set_xlabel("frame rate [fps]")
+        rateAx.set_ylabel("apparent off-rate [$s^{-1}$]")
+        x_r = np.array([1 / times[-1], 1 / times[0]])
+        y_r = k_off + c_bleach * x_r
+        rateAx.plot(x_r, y_r, "C0")
+
+        figureCanvas.draw_idle()
+
+        return k_off
