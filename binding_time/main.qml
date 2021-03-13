@@ -144,13 +144,13 @@ ApplicationWindow {
                         Filter {
                             id: filter
                             datasets: backend.datasets
-                            previewData: (
+                            trackData: (
                                 visible ?
                                 imSel.dataset.getProperty(imSel.currentIndex, "locData") :
                                 null
                             )
                             previewFrameNumber: imSel.currentFrame
-                            previewImageSequence: (
+                            imageSequence: (
                                 visible ?
                                 imSel.dataset.getProperty(imSel.currentIndex, "corrAcceptor") :
                                 null
@@ -200,8 +200,17 @@ ApplicationWindow {
         onLocOptionsChanged: { loc.options = locOptions }
         trackOptions: track.options
         onTrackOptionsChanged: { track.options = trackOptions }
-        filterOptions: filter.options
-        onFilterOptionsChanged: { filter.options = filterOptions }
+        filterOptions: {"filter_initial": filter.filterInitial,
+                        "filter_terminal": filter.filterTerminal,
+                        "mass_thresh": filter.massThresh,
+                        "bg_thresh": filter.bgThresh}
+        onFilterOptionsChanged: {
+            var o = filterOptions
+            filter.filterInitial = o.filter_initial
+            filter.filterTerminal = o.filter_terminal
+            filter.massThresh = o.mass_thresh
+            filter.bgThresh = o.bg_thresh
+        }
         registrationLocSettings: reg.locateSettings
         onRegistrationLocSettingsChanged: { reg.locateSettings = registrationLocSettings }
     }

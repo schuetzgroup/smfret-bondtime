@@ -1,5 +1,7 @@
 import contextlib
+import functools
 import math
+import operator
 from pathlib import Path
 
 from PyQt5 import QtCore, QtQuick
@@ -205,42 +207,65 @@ class DatasetCollection(gui.DatasetCollection):
         self.bleedThroughChanged.emit()
 
 
-class Filter(QtQuick.QQuickItem):
+class Filter(gui.OptionChooser):
     def __init__(self, parent):
-        super().__init__(parent)
-        self._options = {}
+        super().__init__(
+            argProperties=["trackData", "imageSequence", "filterInitial",
+                           "filterTerminal", "bgThresh", "massThresh"],
+            resultProperties=["acceptedTracks", "rejectedTracks"],
+            parent=parent)
+        self._datasets = None
+        self._trackData = None
+        self._imageSequence = None
+        self._acceptedTracks = None
+        self._rejectedTracks = None
 
-    options = gui.SimpleQtProperty("QVariantMap")
+    datasets = gui.SimpleQtProperty(QtCore.QVariant)
+    trackData = gui.SimpleQtProperty(QtCore.QVariant, comp=operator.is_)
+    imageSequence = gui.SimpleQtProperty(QtCore.QVariant)
+    acceptedTracks = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
+    rejectedTracks = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
+    filterInitial = gui.QmlDefinedProperty()
+    filterTerminal = gui.QmlDefinedProperty()
+    massThresh = gui.QmlDefinedProperty()
+    bgThresh = gui.QmlDefinedProperty()
 
-    @QtCore.pyqtSlot(QtCore.QVariant, QtCore.QVariant, result=QtCore.QVariant)
-    def filterTracks(self, trc, imageSeq):
-        if imageSeq is None:
-            return
-        n_frames = len(imageSeq)
-        if trc is None:
-            return None
-        trc["accepted"] = True
-        if self.options["filter_initial"]:
-            bad_p = trc.loc[trc["frame"] == 0, "particle"].unique()
-            trc.loc[trc["particle"].isin(bad_p), "accepted"] = False
-        if self.options["filter_terminal"]:
-            bad_p = trc.loc[trc["frame"] == n_frames - 1, "particle"].unique()
-            trc.loc[trc["particle"].isin(bad_p), "accepted"] = False
-        bg_thresh = self.options["bg_thresh"]
-        if bg_thresh > 0:
-            bad_p = trc.groupby("particle")["bg"].mean() >= bg_thresh
+    @staticmethod
+    def workerFunc(trackData, imageSequence, filterInitial, filterTerminal,
+                   bgThresh, massThresh):
+        if trackData is None or imageSequence is None:
+            return None, None
+        n_frames = len(imageSequence)
+        trackData["accepted"] = True
+        if filterInitial:
+            bad_p = trackData.loc[trackData["frame"] == 0, "particle"].unique()
+            trackData.loc[trackData["particle"].isin(bad_p),
+                          "accepted"] = False
+        if filterTerminal:
+            bad_p = trackData.loc[trackData["frame"] == n_frames - 1,
+                                  "particle"].unique()
+            trackData.loc[trackData["particle"].isin(bad_p),
+                          "accepted"] = False
+        if bgThresh > 0:
+            bad_p = trackData.groupby("particle")["bg"].mean() >= bgThresh
             bad_p = bad_p.index[bad_p.to_numpy()]
-            trc.loc[trc["particle"].isin(bad_p), "accepted"] = False
-        mass_thresh = self.options["mass_thresh"]
-        if mass_thresh > 0:
-            bad_p = trc.groupby("particle")["mass"].mean() <= mass_thresh
+            trackData.loc[trackData["particle"].isin(bad_p),
+                          "accepted"] = False
+        if massThresh > 0:
+            bad_p = trackData.groupby("particle")["mass"].mean() <= massThresh
             bad_p = bad_p.index[bad_p.to_numpy()]
-            trc.loc[trc["particle"].isin(bad_p), "accepted"] = False
-        return trc[trc["accepted"]]
+            trackData.loc[trackData["particle"].isin(bad_p),
+                          "accepted"] = False
+        return (trackData[trackData["accepted"]],
+                trackData[~trackData["accepted"]])
 
     @QtCore.pyqtSlot(result=QtCore.QVariant)
-    def _getFilterFunc(self):
-        return self.filterTracks
+    def getFilterFunc(self):
+        return functools.partial(
+            self.workerFunc,
+            filterInitial=self.filterInitial,
+            filterTerminal=self.filterTerminal,
+            massThresh=self.massThresh, bgThresh=self.bgThresh)
 
 
 class Backend(QtCore.QObject):

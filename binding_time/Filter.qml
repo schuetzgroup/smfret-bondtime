@@ -8,36 +8,28 @@ import BindingTime.Templates 1.0 as T
 T.Filter {
     id: root
 
-    property var datasets
-    property var previewData: null
-    property var previewImageSequence: null
     property int previewFrameNumber: -1
-    property var overlays: Sdt.TrackDisplay {
-        id: trackDisp
-        trackData: options, filterTracks(previewData, previewImageSequence)
-        currentFrame: previewFrameNumber
-    }
-
-    Binding on options { value: rootLayout.options }
-    onOptionsChanged: {
-        filterInitialCheck.checked = options.filter_initial
-        filterTerminalCheck.checked = options.filter_terminal
-        bgThreshSel.value = options.bg_thresh
-        massThreshSel.value = options.mass_thresh
-    }
+    property list<Item> overlays: [
+        Sdt.TrackDisplay {
+            trackData: root.acceptedTracks
+            currentFrame: previewFrameNumber
+        },
+        Sdt.TrackDisplay {
+            trackData: root.rejectedTracks
+            currentFrame: previewFrameNumber
+            color: "red"
+        }
+    ]
+    property alias filterInitial: filterInitialCheck.checked
+    property alias filterTerminal: filterTerminalCheck.checked
+    property alias massThresh: massThreshSel.value
+    property alias bgThresh: bgThreshSel.value
 
     implicitWidth: rootLayout.implicitWidth
     implicitHeight: rootLayout.implicitHeight
 
     ColumnLayout {
         id: rootLayout
-
-        property var options: {
-            "filter_initial": filterInitialCheck.checked,
-            "filter_terminal": filterTerminalCheck.checked,
-            "bg_thresh": bgThreshSel.value,
-            "mass_thresh": massThreshSel.value
-        }
 
         anchors.fill: parent
 
@@ -60,7 +52,7 @@ T.Filter {
             Sdt.EditableSpinBox {
                 id: bgThreshSel
                 from: 0
-                to: Sdt.Common.intMax
+                to: Sdt.Sdt.intMax
                 stepSize: 10
             }
         }
@@ -73,21 +65,22 @@ T.Filter {
             Sdt.EditableSpinBox {
                 id: massThreshSel
                 from: 0
-                to: Sdt.Common.intMax
+                to: Sdt.Sdt.intMax
                 // decimals: 0
                 stepSize: 100
             }
         }
         Item { Layout.fillHeight: true }
         Switch {
-            text: "Show tracks"
-            checked: true
-            onCheckedChanged: { trackDisp.visible = checked }
+            text: "preview"
+            checked: root.previewEnabled
+            onCheckedChanged: { root.previewEnabled = checked }
         }
         Button {
             text: "Filter all…"
             Layout.fillWidth: true
             onClicked: {
+                batchWorker.func = root.getFilterFunc()
                 batchWorker.start()
                 batchDialog.open()
             }
@@ -113,10 +106,11 @@ T.Filter {
             id: batchWorker
             anchors.fill: parent
             dataset: root.datasets
-            func: root._getFilterFunc()
             argRoles: ["locData", "corrAcceptor"]
         }
 
         onRejected: { batchWorker.abort() }
     }
+
+    Component.onCompleted: { completeInit() }
 }
