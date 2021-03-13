@@ -23,6 +23,8 @@ QtQml.qmlRegisterType(Backend, "BindingTime", 1, 0, "Backend")
 QtQml.qmlRegisterType(Dataset, "BindingTime", 1, 0, "Dataset")
 QtQml.qmlRegisterType(Filter, "BindingTime.Templates", 1, 0, "Filter")
 
+gui.mpl_use_qt_font()
+
 comp = gui.Component(Path(__file__).parent / "main.qml")
 if comp.status_ == gui.Component.Status.Error:
         sys.exit(1)
