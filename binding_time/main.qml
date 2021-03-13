@@ -198,8 +198,16 @@ ApplicationWindow {
         onLocAlgorithmChanged: { loc.algorithm = locAlgorithm }
         locOptions: loc.options
         onLocOptionsChanged: { loc.options = locOptions }
-        trackOptions: track.options
-        onTrackOptionsChanged: { track.options = trackOptions }
+        trackOptions: {"search_range": track.searchRange, "memory": track.memory}
+        onTrackOptionsChanged: {
+            // If setting `track`'s properties directly from trackOptions,
+            // there is a problem: setting searchRange updates trackOptions,
+            // overwriting all other new entries with the old ones. Thus assign
+            // to a variable first, which is not updated when setting properties.
+            var opts = trackOptions
+            track.searchRange = opts.search_range
+            track.memory = opts.memory
+        }
         filterOptions: {"filter_initial": filter.filterInitial,
                         "filter_terminal": filter.filterTerminal,
                         "mass_thresh": filter.massThresh,

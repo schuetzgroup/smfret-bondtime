@@ -22,9 +22,9 @@ Item {
 
         anchors.fill: parent
 
-        Sdt.LocateOptions {
+        Sdt.LocOptions {
             id: loc
-            input: previewImage
+            image: previewImage
             Layout.alignment: Qt.AlignTop
             Layout.fillHeight: true
         }

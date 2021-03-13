@@ -8,7 +8,8 @@ Item {
     id: root
 
     property var datasets
-    property alias options: track.options
+    property alias searchRange: track.searchRange
+    property alias memory: track.memory
     property Item overlays: Sdt.TrackDisplay {
         trackData: track.trackData
         currentFrame: previewFrameNumber
@@ -29,6 +30,7 @@ Item {
             locData: root.previewData
             Layout.alignment: Qt.AlignTop
             Layout.fillWidth: true
+            Layout.fillHeight: true
         }
         Item { Layout.fillHeight: true }
         Button {
