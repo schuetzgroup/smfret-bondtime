@@ -16,28 +16,23 @@ class Dataset(gui.Dataset):
         super().__init__(parent)
         self._channels = {}
         self._frameSel = multicolor.FrameSelector("")
-        self._reg = multicolor.Registrator()
+        self._registrator = multicolor.Registrator()
         self._background = 200.0
         self._bleedThrough = 0.0
 
-    def _onTrafoChanged(self):
-        """Emit :py:meth:`dataChanged` if exc seq or channels change"""
-        self.dataChanged.emit(self.index(0), self.index(self.count - 1),
-                              [int(self.Roles.fretImage)])
+        self.channelsChanged.connect(self._imageDataChanged)
+        self.registratorChanged.connect(self._imageDataChanged)
+        self.excitationSeqChanged.connect(self._imageDataChanged)
+        self.backgroundChanged.connect(self._corrAcceptorChanged)
+        self.bleedThroughChanged.connect(self._corrAcceptorChanged)
 
-    channelsChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty("QVariantMap", notify=channelsChanged)
-    def channels(self):
-        return self._channels
-
-    @channels.setter
-    def channels(self, ch):
-        if ch == self._channels:
-            return
-        self._channels = ch
-        self.channelsChanged.emit()
-        # TODO: this will affect also some roles
+    channels = gui.SimpleQtProperty("QVariantMap")
+    registrator = gui.SimpleQtProperty(
+        QtCore.QVariant,
+        comp=lambda r1, r2: (np.allclose(r1.parameters1, r2.parameters1) and
+                             np.allclose(r1.parameters2, r2.parameters2)))
+    background = gui.SimpleQtProperty(float, comp=math.isclose)
+    bleedThrough = gui.SimpleQtProperty(float, comp=math.isclose)
 
     excitationSeqChanged = QtCore.pyqtSignal()
     """:py:attr:`excitationSeq` changed"""
@@ -55,25 +50,6 @@ class Dataset(gui.Dataset):
             return
         self._frameSel.excitation_seq = seq
         self.excitationSeqChanged.emit()
-        # TODO: this will affect also some roles
-
-    registratorChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty(QtCore.QVariant, notify=registratorChanged)
-    def registrator(self):
-        return self._reg
-
-    @registrator.setter
-    def registrator(self, r):
-        if (np.allclose(r.parameters1, self._reg.parameters1) and
-                np.allclose(r.parameters2, self._reg.parameters2)):
-            return
-        self._reg = r
-        self.registratorChanged.emit()
-        # TODO: this will affect also some roles
-
-    background = gui.SimpleQtProperty(float, comp=math.isclose)
-    bleedThrough = gui.SimpleQtProperty(float, comp=math.isclose)
 
     @QtCore.pyqtSlot(int, str, result=QtCore.QVariant)
     def getProperty(self, index, role):
@@ -93,7 +69,7 @@ class Dataset(gui.Dataset):
                 seq = self._frameSel(seq, "d")
             if role == "donor":
                 # FIXME: Is donor garanteed to be channel 2?
-                seq = self._reg(seq, channel=2, cval=self._background)
+                seq = self._registrator(seq, channel=2, cval=self._background)
             return seq
         if role == "corrAcceptor":
             d = self.getProperty(index, "donor")
@@ -106,6 +82,15 @@ class Dataset(gui.Dataset):
 
             return corr(d, a)
         return super().getProperty(index, role)
+
+    def _imageDataChanged(self):
+        self.dataChanged.emit(self.index(0), self.index(self.count - 1),
+                              [self.Roles.donor, self.Roles.acceptor,
+                               self.Roles.corrAcceptor])
+
+    def _corrAcceptorChanged(self):
+        self.dataChanged.emit(self.index(0), self.index(self.count - 1),
+                              [self.Roles.corrAcceptor])
 
 
 class DatasetCollection(gui.DatasetCollection):
