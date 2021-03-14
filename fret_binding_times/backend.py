@@ -91,6 +91,8 @@ class Dataset(gui.Dataset):
 
 
 class DatasetCollection(gui.DatasetCollection):
+    DatasetClass = Dataset
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.dataRoles = ["key", "donor", "acceptor", "corrAcceptor",
@@ -99,94 +101,21 @@ class DatasetCollection(gui.DatasetCollection):
         self._channels = {"acceptor": {"source_id": 0, "roi": None},
                           "donor": {"source_id": 0, "roi": None}}
         self._excitationSeq = ""
-        self._reg = multicolor.Registrator()
+        self._registrator = multicolor.Registrator()
         self._background = 200.0
         self._bleedThrough = 0.0
 
-    def makeDataset(self):
-        ret = super().makeDataset()
-        ret.channels = self.channels
-        ret.excitationSeq = self.excitationSeq
-        ret.registrator = self.registrator
-        ret.background = self.background
-        ret.bleedThrough = self.bleedThrough
-        return ret
+        self.propagateProperty("channels")
+        self.propagateProperty("excitationSeq")
+        self.propagateProperty("registrator")
+        self.propagateProperty("background")
+        self.propagateProperty("bleedThrough")
 
-    channelsChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty("QVariantMap", notify=channelsChanged)
-    def channels(self):
-        return self._channels
-
-    @channels.setter
-    def channels(self, ch):
-        if ch == self._channels:
-            return
-        self._channels = ch
-        for i in range(self.rowCount()):
-            self.getProperty(i, "dataset").channels = ch
-        self.channelsChanged.emit()
-
-    excitationSeqChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty(str, notify=excitationSeqChanged)
-    def excitationSeq(self) -> str:
-        return self._excitationSeq
-
-    @excitationSeq.setter
-    def excitationSeq(self, seq: str):
-        if seq == self.excitationSeq:
-            return
-        self._excitationSeq = seq
-        for i in range(self.rowCount()):
-            self.getProperty(i, "dataset").excitationSeq = seq
-        self.excitationSeqChanged.emit()
-
-    registratorChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty(QtCore.QVariant, notify=registratorChanged)
-    def registrator(self):
-        return self._reg
-
-    @registrator.setter
-    def registrator(self, r):
-        if (np.allclose(r.parameters1, self._reg.parameters1) and
-                np.allclose(r.parameters2, self._reg.parameters2)):
-            return
-        self._reg = r
-        for i in range(self.rowCount()):
-            self.getProperty(i, "dataset").registrator = r
-        self.registratorChanged.emit()
-
-    backgroundChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty(float, notify=backgroundChanged)
-    def background(self):
-        return self._background
-
-    @background.setter
-    def background(self, bg):
-        if math.isclose(bg, self._background):
-            return
-        self._background = bg
-        for i in range(self.rowCount()):
-            self.getProperty(i, "dataset").background = bg
-        self.backgroundChanged.emit()
-
-    bleedThroughChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty(float, notify=bleedThroughChanged)
-    def bleedThrough(self):
-        return self._bleedThrough
-
-    @bleedThrough.setter
-    def bleedThrough(self, bt):
-        if math.isclose(bt, self._bleedThrough):
-            return
-        self._bleedThrough = bt
-        for i in range(self.rowCount()):
-            self.getProperty(i, "dataset").bleedThrough = bt
-        self.bleedThroughChanged.emit()
+    channels = gui.SimpleQtProperty("QVariantMap")
+    excitationSeq = gui.SimpleQtProperty(str)
+    registrator = gui.SimpleQtProperty(QtCore.QVariant)
+    background = gui.SimpleQtProperty(float)
+    bleedThrough = gui.SimpleQtProperty(float)
 
 
 class Filter(gui.OptionChooser):
