@@ -27,10 +27,7 @@ class Dataset(gui.Dataset):
         self.bleedThroughChanged.connect(self._corrAcceptorChanged)
 
     channels = gui.SimpleQtProperty("QVariantMap")
-    registrator = gui.SimpleQtProperty(
-        QtCore.QVariant,
-        comp=lambda r1, r2: (np.allclose(r1.parameters1, r2.parameters1) and
-                             np.allclose(r1.parameters2, r2.parameters2)))
+    registrator = gui.SimpleQtProperty(QtCore.QVariant)
     background = gui.SimpleQtProperty(float, comp=math.isclose)
     bleedThrough = gui.SimpleQtProperty(float, comp=math.isclose)
 
