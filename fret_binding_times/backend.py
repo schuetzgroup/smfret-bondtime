@@ -258,15 +258,15 @@ class Backend(QtCore.QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._algo = ""
-        self._options = {}
-        self._trcOptions = {}
+        self._locAlgorithm = ""
+        self._locOptions = {}
+        self._trackOptions = {}
         self._filterOptions = {}
         self._datasets = DatasetCollection(self)
         self._specialDatasets = DatasetCollection(self)
         for k in self._specialKeys:
             self._specialDatasets.append(k)
-        self._regLocSettings = {}
+        self._registrationLocOptions = {}
 
     @QtCore.pyqtProperty(QtCore.QVariant, constant=True)
     def datasets(self):
@@ -276,76 +276,17 @@ class Backend(QtCore.QObject):
     def specialDatasets(self):
         return self._specialDatasets
 
-    locAlgorithmChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty(str, notify=locAlgorithmChanged)
-    def locAlgorithm(self):
-        return self._algo
-
-    @locAlgorithm.setter
-    def locAlgorithm(self, a):
-        if a == self._algo:
-            return
-        self._algo = a
-        self.locAlgorithmChanged.emit()
-
-    locOptionsChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty("QVariantMap", notify=locOptionsChanged)
-    def locOptions(self):
-        return self._options
-
-    @locOptions.setter
-    def locOptions(self, o):
-        if o == self._options:
-            return
-        self._options = o
-        self.locOptionsChanged.emit()
-
-    trackOptionsChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty("QVariantMap", notify=trackOptionsChanged)
-    def trackOptions(self):
-        return self._trcOptions
-
-    @trackOptions.setter
-    def trackOptions(self, o):
-        if o == self._trcOptions:
-            return
-        self._trcOptions = o
-        self.trackOptionsChanged.emit()
-
-    filterOptionsChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty("QVariantMap", notify=filterOptionsChanged)
-    def filterOptions(self):
-        return self._filterOptions
-
-    @filterOptions.setter
-    def filterOptions(self, o):
-        if o == self._filterOptions:
-            return
-        self._filterOptions = o
-        self.filterOptionsChanged.emit()
+    locAlgorithm = gui.SimpleQtProperty(str)
+    locOptions = gui.SimpleQtProperty("QVariantMap")
+    trackOptions = gui.SimpleQtProperty("QVariantMap")
+    filterOptions = gui.SimpleQtProperty("QVariantMap")
+    registrationLocOptions = gui.SimpleQtProperty("QVariantMap")
 
     registrationDatasetChanged = QtCore.pyqtSignal()
 
     @QtCore.pyqtProperty(QtCore.QVariant, notify=registrationDatasetChanged)
     def registrationDataset(self):
         return self._specialDatasets.getProperty(0, "dataset")
-
-    registrationLocSettingsChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty("QVariantMap", notify=registrationLocSettingsChanged)
-    def registrationLocSettings(self):
-        return self._regLocSettings
-
-    @registrationLocSettings.setter
-    def registrationLocSettings(self, s):
-        if s == self._regLocSettings:
-            return
-        self._regLocSettings = s
-        self.registrationLocSettingsChanged.emit()
 
     @QtCore.pyqtSlot(QtCore.QUrl)
     def save(self, url):
@@ -357,7 +298,7 @@ class Backend(QtCore.QObject):
                 "track_options": self.trackOptions,
                 "files": self._datasets.fileLists,
                 "special_files": self._specialDatasets.fileLists,
-                "registration_loc": self.registrationLocSettings,
+                "registration_loc": self.registrationLocOptions,
                 "registrator": self._datasets.registrator,
                 "background": self._datasets.background,
                 "bleed_through": self._datasets.bleedThrough}
@@ -410,7 +351,7 @@ class Backend(QtCore.QObject):
                 k: sf.get(k, []) for k in self._specialKeys}
             self.registrationDatasetChanged.emit()
         if "registration_loc" in data:
-            self.registrationLocSettings = data["registration_loc"]
+            self.registrationLocOptions = data["registration_loc"]
         if "registrator" in data:
             self._datasets.registrator = data["registrator"]
         if "background" in data:

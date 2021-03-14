@@ -219,8 +219,8 @@ ApplicationWindow {
             filter.massThresh = o.mass_thresh
             filter.bgThresh = o.bg_thresh
         }
-        registrationLocSettings: reg.locateSettings
-        onRegistrationLocSettingsChanged: { reg.locateSettings = registrationLocSettings }
+        registrationLocOptions: reg.locateSettings
+        onRegistrationLocOptionsChanged: { reg.locateSettings = registrationLocOptions }
     }
     Settings {
         id: settings
