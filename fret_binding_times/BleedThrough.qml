@@ -18,7 +18,6 @@ Item {
             "corrAcceptor"
     }
 
-
     implicitWidth: rootLayout.implicitWidth
     implicitHeight: rootLayout.implicitHeight
 
@@ -68,7 +67,6 @@ Item {
 
                 RadioButton {
                     id: showDonorButton
-                    checked: true
                     text: "donor"
                 }
                 RadioButton {
@@ -77,6 +75,7 @@ Item {
                 }
                 RadioButton {
                     id: showAcceptorCorrButton
+                    checked: true
                     text: "corrected acceptor"
                 }
             }
