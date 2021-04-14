@@ -226,7 +226,8 @@ class Backend(QtCore.QObject):
                 "registration_loc": self.registrationLocOptions,
                 "registrator": self._datasets.registrator,
                 "background": self._datasets.background,
-                "bleed_through": self._datasets.bleedThrough}
+                "bleed_through": self._datasets.bleedThrough,
+                "filter_options": self.filterOptions}
 
         ypath = Path(url.toLocalFile())
         with ypath.open("w") as yf:
@@ -283,6 +284,8 @@ class Backend(QtCore.QObject):
             self._datasets.background = data["background"]
         if "bleed_through" in data:
             self._datasets.bleedThrough = data["bleed_through"]
+        if "filter_options" in data:
+            self.filterOptions = data["filter_options"]
 
         h5path = ypath.with_suffix(".h5")
         if h5path.exists():
