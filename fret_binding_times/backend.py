@@ -49,28 +49,27 @@ class Dataset(gui.Dataset):
         self.excitationSeqChanged.emit()
 
     @QtCore.pyqtSlot(int, str, result=QtCore.QVariant)
-    def getProperty(self, index, role):
+    def get(self, index, role):
         if not (0 <= index <= self.rowCount() and role in self.roles):
             return None
         if role == "key":
-            return "; ".join(str(self.getProperty(index, r))
-                             for r in self.fileRoles)
+            return "; ".join(str(self.get(index, r)) for r in self.fileRoles)
         if role in ("donor", "acceptor"):
             chan = self.channels[role]
-            fname = self.getProperty(index, self.fileRoles[chan["source_id"]])
+            fname = self.get(index, self.fileRoles[chan["source_id"]])
             fname = Path(self.dataDir, fname)
             seq = io.ImageSequence(fname).open()
             if chan["roi"] is not None:
                 seq = chan["roi"](seq)
             if self._frameSel.excitation_seq:
-                seq = self._frameSel(seq, "d")
+                seq = self._frameSel.select(seq, "d")
             if role == "donor":
                 # FIXME: Is donor garanteed to be channel 2?
                 seq = self._registrator(seq, channel=2, cval=self._background)
             return seq
         if role == "corrAcceptor":
-            d = self.getProperty(index, "donor")
-            a = self.getProperty(index, "acceptor")
+            d = self.get(index, "donor")
+            a = self.get(index, "acceptor")
 
             @helper.pipeline(ancestor_count="all")
             def corr(donor, acceptor):
@@ -78,7 +77,7 @@ class Dataset(gui.Dataset):
                 return acceptor - noBg * self.bleedThrough
 
             return corr(d, a)
-        return super().getProperty(index, role)
+        return super().get(index, role)
 
     def _imageDataChanged(self):
         self.dataChanged.emit(self.index(0), self.index(self.count - 1),
@@ -212,7 +211,7 @@ class Backend(QtCore.QObject):
 
     @QtCore.pyqtProperty(QtCore.QVariant, notify=registrationDatasetChanged)
     def registrationDataset(self):
-        return self._specialDatasets.getProperty(0, "dataset")
+        return self._specialDatasets.get(0, "dataset")
 
     @QtCore.pyqtSlot(QtCore.QUrl)
     def save(self, url):
@@ -236,11 +235,11 @@ class Backend(QtCore.QObject):
         import tables, warnings
         with pd.HDFStore(ypath.with_suffix(".h5"), "w") as s:
             for i in range(self._datasets.rowCount()):
-                ekey = self._datasets.getProperty(i, "key")
-                dset = self._datasets.getProperty(i, "dataset")
+                ekey = self._datasets.get(i, "key")
+                dset = self._datasets.get(i, "dataset")
                 for j in range(dset.rowCount()):
-                    dkey = dset.getProperty(j, "key")
-                    ld = dset.getProperty(j, "locData")
+                    dkey = dset.get(j, "key")
+                    ld = dset.get(j, "locData")
                     if isinstance(ld, pd.DataFrame):
                         with warnings.catch_warnings():
                             warnings.simplefilter("ignore",
@@ -289,13 +288,12 @@ class Backend(QtCore.QObject):
         if h5path.exists():
             with pd.HDFStore(h5path, "r") as s:
                 for i in range(self._datasets.rowCount()):
-                    ekey = self._datasets.getProperty(i, "key")
-                    dset = self._datasets.getProperty(i, "dataset")
+                    ekey = self._datasets.get(i, "key")
+                    dset = self._datasets.get(i, "dataset")
                     for j in range(dset.rowCount()):
-                        dkey = dset.getProperty(j, "key")
+                        dkey = dset.get(j, "key")
                         with contextlib.suppress(KeyError):
-                            dset.setProperty(j, "locData",
-                                             s.get(f"/{ekey}/{dkey}"))
+                            dset.set(j, "locData", s.get(f"/{ekey}/{dkey}"))
 
     @QtCore.pyqtSlot(result=QtCore.QVariant)
     def getLocateFunc(self):
@@ -324,12 +322,12 @@ class Backend(QtCore.QObject):
 
         res = []
         for i in range(self._datasets.rowCount()):
-            time = int(self._datasets.getProperty(i, "key")) / 1000
-            ds = self._datasets.getProperty(i, "dataset")
+            time = int(self._datasets.get(i, "key")) / 1000
+            ds = self._datasets.get(i, "dataset")
 
             frameCounts = []
             for j in range(ds.rowCount()):
-                df = ds.getProperty(j, "locData")
+                df = ds.get(j, "locData")
                 df = df[df["accepted"]]
                 fc = df.groupby("particle")["frame"].apply(np.ptp)
                 if not fc.empty:

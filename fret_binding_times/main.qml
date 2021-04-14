@@ -3,7 +3,7 @@ import QtQuick.Controls 2.12
 import QtQuick.Dialogs 1.3 as QQDialogs
 import QtQuick.Layouts 1.12
 import Qt.labs.settings 1.0
-import SdtGui 1.0 as Sdt
+import SdtGui 0.1 as Sdt
 import BindingTime 1.0
 
 
