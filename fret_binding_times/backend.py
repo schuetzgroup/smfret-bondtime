@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtQuick
 import numpy as np
 import pandas as pd
 import scipy.optimize
+import scipy.ndimage
 from sdt import brightness, gui, helper, io, loc, multicolor
 
 
@@ -17,19 +18,16 @@ class Dataset(gui.Dataset):
         self._channels = {}
         self._frameSel = multicolor.FrameSelector("")
         self._registrator = multicolor.Registrator()
-        self._background = 200.0
-        self._bleedThrough = 0.0
+        self._bleedThrough = {"background": 200.0, "factor": 0.0, "smooth": 1.0}
 
         self.channelsChanged.connect(self._imageDataChanged)
         self.registratorChanged.connect(self._imageDataChanged)
         self.excitationSeqChanged.connect(self._imageDataChanged)
-        self.backgroundChanged.connect(self._corrAcceptorChanged)
         self.bleedThroughChanged.connect(self._corrAcceptorChanged)
 
     channels = gui.SimpleQtProperty("QVariantMap")
     registrator = gui.SimpleQtProperty(QtCore.QVariant)
     background = gui.SimpleQtProperty(float, comp=math.isclose)
-    bleedThrough = gui.SimpleQtProperty(float, comp=math.isclose)
 
     excitationSeqChanged = QtCore.pyqtSignal()
     """:py:attr:`excitationSeq` changed"""
@@ -48,6 +46,24 @@ class Dataset(gui.Dataset):
         self._frameSel.excitation_seq = seq
         self.excitationSeqChanged.emit()
 
+    bleedThroughChanged = QtCore.pyqtSignal()
+
+    @QtCore.pyqtProperty("QVariantMap", notify=bleedThroughChanged)
+    def bleedThrough(self):
+        return self._bleedThrough.copy()
+
+    @bleedThrough.setter
+    def bleedThrough(self, bt):
+        modified = False
+        for k in self._bleedThrough:
+            with contextlib.suppress(KeyError):
+                v = bt[k]
+                if not math.isclose(v, self._bleedThrough[k]):
+                    self._bleedThrough[k] = v
+                    modified = True
+        if modified:
+            self.bleedThroughChanged.emit()
+
     @QtCore.pyqtSlot(int, str, result=QtCore.QVariant)
     def get(self, index, role):
         if not (0 <= index <= self.rowCount() and role in self.roles):
@@ -65,28 +81,32 @@ class Dataset(gui.Dataset):
                 seq = self._frameSel.select(seq, "d")
             if role == "donor":
                 # FIXME: Is donor garanteed to be channel 2?
-                seq = self._registrator(seq, channel=2, cval=self._background)
+                seq = self._registrator(seq, channel=2,
+                                        cval=self._bleedThrough["background"])
             return seq
         if role == "corrAcceptor":
             d = self.get(index, "donor")
             a = self.get(index, "acceptor")
+            bg = self._bleedThrough["background"]
+            bt = self._bleedThrough["factor"]
+            smt = self._bleedThrough["smooth"]
 
             @helper.pipeline(ancestor_count="all")
             def corr(donor, acceptor):
-                noBg = np.asanyarray(donor, dtype=float) - self.background
-                return acceptor - noBg * self.bleedThrough
+                noBg = np.asanyarray(donor, dtype=float) - bg
+                if smt >= 1e-3:
+                    noBg = scipy.ndimage.gaussian_filter(noBg, smt)
+                return acceptor - noBg * bt
 
             return corr(d, a)
         return super().get(index, role)
 
     def _imageDataChanged(self):
-        self.dataChanged.emit(self.index(0), self.index(self.count - 1),
-                              [self.Roles.donor, self.Roles.acceptor,
-                               self.Roles.corrAcceptor])
+        self.itemsChanged.emit(0, self.count, ["donor", "acceptor",
+                                               "corrAcceptor"])
 
     def _corrAcceptorChanged(self):
-        self.dataChanged.emit(self.index(0), self.index(self.count - 1),
-                              [self.Roles.corrAcceptor])
+        self.itemsChanged.emit(0, self.count, ["corrAcceptor"])
 
 
 class DatasetCollection(gui.DatasetCollection):
@@ -101,20 +121,18 @@ class DatasetCollection(gui.DatasetCollection):
                           "donor": {"source_id": 0, "roi": None}}
         self._excitationSeq = ""
         self._registrator = multicolor.Registrator()
-        self._background = 200.0
-        self._bleedThrough = 0.0
+        self._bleedThrough = {"background": 200.0, "factor": 0.0, "smooth": 1.0}
 
         self.propagateProperty("channels")
         self.propagateProperty("excitationSeq")
         self.propagateProperty("registrator")
-        self.propagateProperty("background")
         self.propagateProperty("bleedThrough")
 
     channels = gui.SimpleQtProperty("QVariantMap")
     excitationSeq = gui.SimpleQtProperty(str)
     registrator = gui.SimpleQtProperty(QtCore.QVariant)
     background = gui.SimpleQtProperty(float)
-    bleedThrough = gui.SimpleQtProperty(float)
+    bleedThrough = gui.SimpleQtProperty("QVariantMap")
 
 
 class Filter(gui.OptionChooser):
@@ -225,7 +243,6 @@ class Backend(QtCore.QObject):
                 "special_files": self._specialDatasets.fileLists,
                 "registration_loc": self.registrationLocOptions,
                 "registrator": self._datasets.registrator,
-                "background": self._datasets.background,
                 "bleed_through": self._datasets.bleedThrough,
                 "filter_options": self.filterOptions}
 
@@ -280,8 +297,6 @@ class Backend(QtCore.QObject):
             self.registrationLocOptions = data["registration_loc"]
         if "registrator" in data:
             self._datasets.registrator = data["registrator"]
-        if "background" in data:
-            self._datasets.background = data["background"]
         if "bleed_through" in data:
             self._datasets.bleedThrough = data["bleed_through"]
         if "filter_options" in data:

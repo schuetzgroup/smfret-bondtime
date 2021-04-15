@@ -128,10 +128,24 @@ ApplicationWindow {
 
                             BleedThrough {
                                 id: bt
-                                background: backend.datasets.background
-                                onBackgroundChanged: { backend.datasets.background = background }
-                                bleedThrough: backend.datasets.bleedThrough
-                                onBleedThroughChanged: { backend.datasets.bleedThrough = bleedThrough }
+                                background: backend.datasets.bleedThrough.background
+                                onBackgroundChanged: {
+                                    var bt = backend.datasets.bleedThrough
+                                    bt.background = background
+                                    backend.datasets.bleedThrough = bt
+                                }
+                                factor: backend.datasets.bleedThrough.factor
+                                onFactorChanged: {
+                                    var bt = backend.datasets.bleedThrough
+                                    bt.factor = factor
+                                    backend.datasets.bleedThrough = bt
+                                }
+                                smooth: backend.datasets.bleedThrough.smooth
+                                onSmoothChanged: {
+                                    var bt = backend.datasets.bleedThrough
+                                    bt.smooth = smooth
+                                    backend.datasets.bleedThrough = bt
+                                }
                             }
                             Locator {
                                 id: loc

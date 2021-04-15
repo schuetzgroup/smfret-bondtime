@@ -8,8 +8,9 @@ Item {
     id: root
 
     property alias background: bgSel.value
-    property alias bleedThrough: btSel.value
-    property string imageRole: {
+    property alias factor: btSel.value
+    property alias smooth: smoothSel.value
+    readonly property string imageRole: {
         if (showDonorButton.checked)
             "donor"
         else if (showAcceptorButton.checked)
@@ -39,7 +40,7 @@ Item {
             stepSize: 10
         }
         Label {
-            text: "bleed-through"
+            text: "factor"
             Layout.fillWidth: true
         }
         Sdt.RealSpinBox {
@@ -48,6 +49,18 @@ Item {
             to: 1
             decimals: 3
             stepSize: 0.01
+        }
+        Label {
+            text: "smoothing"
+            Layout.fillWidth: true
+        }
+        Sdt.RealSpinBox {
+            id: smoothSel
+            from: 0
+            to: Infinity
+            decimals: 1
+            stepSize: 0.1
+            value: 1.0
         }
         Item {
             Layout.fillHeight: true
