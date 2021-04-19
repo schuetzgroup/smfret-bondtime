@@ -24,6 +24,7 @@ T.Filter {
     property alias filterTerminal: filterTerminalCheck.checked
     property alias massThresh: massThreshSel.value
     property alias bgThresh: bgThreshSel.value
+    property alias minLength: minLengthSel.value
 
     implicitWidth: rootLayout.implicitWidth
     implicitHeight: rootLayout.implicitHeight
@@ -68,6 +69,18 @@ T.Filter {
                 to: Sdt.Sdt.intMax
                 // decimals: 0
                 stepSize: 100
+            }
+        }
+        RowLayout {
+            Label {
+                text: "min. length"
+                Layout.fillWidth: true
+            }
+            Sdt.EditableSpinBox {
+                id: minLengthSel
+                from: 1
+                to: Sdt.Sdt.intMax
+                value: 2
             }
         }
         Item { Layout.fillHeight: true }

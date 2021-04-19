@@ -139,7 +139,8 @@ class Filter(gui.OptionChooser):
     def __init__(self, parent):
         super().__init__(
             argProperties=["trackData", "imageSequence", "filterInitial",
-                           "filterTerminal", "bgThresh", "massThresh"],
+                           "filterTerminal", "bgThresh", "massThresh",
+                           "minLength"],
             resultProperties=["acceptedTracks", "rejectedTracks"],
             parent=parent)
         self._datasets = None
@@ -157,10 +158,11 @@ class Filter(gui.OptionChooser):
     filterTerminal = gui.QmlDefinedProperty()
     massThresh = gui.QmlDefinedProperty()
     bgThresh = gui.QmlDefinedProperty()
+    minLength = gui.QmlDefinedProperty()
 
     @staticmethod
     def workerFunc(trackData, imageSequence, filterInitial, filterTerminal,
-                   bgThresh, massThresh):
+                   bgThresh, massThresh, minLength):
         if trackData is None or imageSequence is None:
             return None, None
         n_frames = len(imageSequence)
@@ -184,6 +186,12 @@ class Filter(gui.OptionChooser):
             bad_p = bad_p.index[bad_p.to_numpy()]
             trackData.loc[trackData["particle"].isin(bad_p),
                           "accepted"] = False
+        if minLength > 1:
+            bad_p = (trackData.groupby("particle")["frame"].apply(len) <
+                     minLength)
+            bad_p = bad_p.index[bad_p.to_numpy()]
+            trackData.loc[trackData["particle"].isin(bad_p),
+                          "accepted"] = False
         return (trackData[trackData["accepted"]],
                 trackData[~trackData["accepted"]])
 
@@ -193,7 +201,8 @@ class Filter(gui.OptionChooser):
             self.workerFunc,
             filterInitial=self.filterInitial,
             filterTerminal=self.filterTerminal,
-            massThresh=self.massThresh, bgThresh=self.bgThresh)
+            massThresh=self.massThresh, bgThresh=self.bgThresh,
+            minLength=self.minLength)
 
 
 class Backend(QtCore.QObject):
@@ -339,8 +348,8 @@ class Backend(QtCore.QObject):
     def lifetimeModel(t_frame, t_off, t_bleach):
         return 1 / (1 / t_off + 1 / (t_bleach * t_frame))
 
-    @QtCore.pyqtSlot(QtCore.QVariant, int, int, bool, result=float)
-    def getResults(self, figureCanvas, ignoreFirst, minCount, fitRates):
+    @QtCore.pyqtSlot(QtCore.QVariant, int, int, bool, result=list)
+    def getResults(self, figureCanvas, minLength, minCount, fitRates):
         if not self._datasets.rowCount():
             return np.NaN
 
@@ -359,11 +368,12 @@ class Backend(QtCore.QObject):
                     # work with np.bincount
                     frameCounts.append(fc)
             frameCounts = np.concatenate(frameCounts)
-            y = np.bincount(frameCounts)
+            # Need to ignore the first minLength - 1 values since all tracks
+            # with lengths < minLength have been removed
+            y = np.bincount(frameCounts)[minLength-1:]
             y = np.cumsum(y[::-1])[::-1]  # survival function
-            x = np.arange(0.5, len(y)) * time
+            x = np.arange(minLength-0.5, len(y)+minLength-1) * time
             use = np.ones(len(x), dtype=bool)
-            use[:ignoreFirst] = False
             use[y < minCount] = False
 
             fit_x = x[use]
@@ -376,7 +386,7 @@ class Backend(QtCore.QObject):
                 self.survivalModel, fit_x, fit_y, p0=[a, 1 / m])[0]
             res.append((time, x, y, use, fit))
 
-        res = sorted(res, key=lambda x: x[0])
+        res = sorted(res, key=lambda x: x[0], reverse=True)
 
         fig = figureCanvas.figure
         fig.clf()

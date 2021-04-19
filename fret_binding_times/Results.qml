@@ -7,6 +7,8 @@ import SdtGui 0.1 as Sdt
 Item {
     id: root
 
+    property int minLength
+
     implicitWidth: rootLayout.implicitWidth
     implicitHeight: rootLayout.implicitHeight
 
@@ -38,11 +40,6 @@ Item {
                             text: "fit times"
                             Layout.columnSpan: 2
                         }
-                        Label { text: "ignore first" }
-                        Sdt.EditableSpinBox {
-                            id: ignoreFirstSel
-                            value: 1
-                        }
                         Label { text: "min. count" }
                         Sdt.EditableSpinBox {
                             id: minCountSel
@@ -54,10 +51,10 @@ Item {
                     id: resultValueGroup
                     property real kOff: {
                         if (root.visible) {
-                        backend.getResults(
-                            resultCanvas, ignoreFirstSel.value, minCountSel.value,
-                            fitRatesButton.checked
-                        )
+                            backend.getResults(
+                                resultCanvas, root.minLength, minCountSel.value,
+                                fitRatesButton.checked
+                            )
                         } else {
                             NaN
                         }
