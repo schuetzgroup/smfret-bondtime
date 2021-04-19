@@ -210,6 +210,7 @@ class Backend(QtCore.QObject):
         for k in self._specialKeys:
             self._specialDatasets.append(k)
         self._registrationLocOptions = {}
+        self._saveFile = QtCore.QUrl()
 
     @QtCore.pyqtProperty(QtCore.QVariant, constant=True)
     def datasets(self):
@@ -224,6 +225,7 @@ class Backend(QtCore.QObject):
     trackOptions = gui.SimpleQtProperty("QVariantMap")
     filterOptions = gui.SimpleQtProperty("QVariantMap")
     registrationLocOptions = gui.SimpleQtProperty("QVariantMap")
+    saveFile = gui.SimpleQtProperty(QtCore.QUrl)
 
     registrationDatasetChanged = QtCore.pyqtSignal()
 
@@ -263,6 +265,8 @@ class Backend(QtCore.QObject):
                             warnings.simplefilter("ignore",
                                                   tables.NaturalNameWarning)
                             s.put(f"/{ekey}/{dkey}", ld)
+
+        self.saveFile = QtCore.QUrl.fromLocalFile(str(ypath))
 
     @QtCore.pyqtSlot(QtCore.QUrl, result=QtCore.QVariant)
     def load(self, url):
@@ -312,6 +316,8 @@ class Backend(QtCore.QObject):
                         dkey = dset.get(j, "key")
                         with contextlib.suppress(KeyError):
                             dset.set(j, "locData", s.get(f"/{ekey}/{dkey}"))
+
+        self.saveFile = QtCore.QUrl.fromLocalFile(str(ypath))
 
     @QtCore.pyqtSlot(result=QtCore.QVariant)
     def getLocateFunc(self):

@@ -10,7 +10,9 @@ import BindingTime 1.0
 ApplicationWindow {
     id: window
     visible: true
-    title: "FRET lifetime analyzer"
+    title: ("FRET lifetime analyzer" +
+            (backend.saveFile.toString().length ?
+             (" – " + Sdt.Sdt.urlToLocalFile(backend.saveFile)) : ""))
 
     property alias backend: backend
 
@@ -29,6 +31,17 @@ ApplicationWindow {
             }
             ToolButton {
                 icon.name: "document-save"
+                onClicked: {
+                    if (!backend.saveFile.toString().length) {
+                        saveFileDialog.selectExisting = false
+                        saveFileDialog.open()
+                    } else {
+                        backend.save(backend.saveFile)
+                    }
+                }
+            }
+            ToolButton {
+                icon.name: "document-save-as"
                 onClicked: {
                     saveFileDialog.selectExisting = false
                     saveFileDialog.open()
@@ -260,6 +273,7 @@ ApplicationWindow {
         id: saveFileDialog
         selectMultiple: false
         nameFilters: ["YAML savefile (*.yaml)", "All files (*)"]
+        folder: Sdt.Sdt.parentUrl(backend.saveFile)
         onAccepted: {
             if (selectExisting)
                 backend.load(fileUrl)
