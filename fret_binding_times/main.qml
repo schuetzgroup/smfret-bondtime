@@ -266,6 +266,13 @@ ApplicationWindow {
         }
         registrationLocOptions: reg.locateSettings
         onRegistrationLocOptionsChanged: { reg.locateSettings = registrationLocOptions }
+        fitOptions: {"fit_variable": results.fitVariable,
+                     "min_count": results.minCount}
+        onFitOptionsChanged: {
+            var o = fitOptions
+            results.fitVariable = o.fit_variable
+            results.minCount = o.min_count
+        }
     }
     Settings {
         id: settings

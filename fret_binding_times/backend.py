@@ -219,6 +219,7 @@ class Backend(QtCore.QObject):
         for k in self._specialKeys:
             self._specialDatasets.append(k)
         self._registrationLocOptions = {}
+        self._fitOptions = {}
         self._saveFile = QtCore.QUrl()
 
     @QtCore.pyqtProperty(QtCore.QVariant, constant=True)
@@ -234,6 +235,7 @@ class Backend(QtCore.QObject):
     trackOptions = gui.SimpleQtProperty("QVariantMap")
     filterOptions = gui.SimpleQtProperty("QVariantMap")
     registrationLocOptions = gui.SimpleQtProperty("QVariantMap")
+    fitOptions = gui.SimpleQtProperty("QVariantMap")
     saveFile = gui.SimpleQtProperty(QtCore.QUrl)
 
     registrationDatasetChanged = QtCore.pyqtSignal()
@@ -255,7 +257,8 @@ class Backend(QtCore.QObject):
                 "registration_loc": self.registrationLocOptions,
                 "registrator": self._datasets.registrator,
                 "bleed_through": self._datasets.bleedThrough,
-                "filter_options": self.filterOptions}
+                "filter_options": self.filterOptions,
+                "fit_options": self.fitOptions}
 
         ypath = Path(url.toLocalFile())
         with ypath.open("w") as yf:
@@ -314,6 +317,8 @@ class Backend(QtCore.QObject):
             self._datasets.bleedThrough = data["bleed_through"]
         if "filter_options" in data:
             self.filterOptions = data["filter_options"]
+        if "fit_options" in data:
+            self.fitOptions = data["fit_options"]
 
         h5path = ypath.with_suffix(".h5")
         if h5path.exists():

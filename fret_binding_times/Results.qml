@@ -8,6 +8,19 @@ Item {
     id: root
 
     property int minLength
+    property alias minCount: minCountSel.value
+    property string fitVariable
+
+    Binding on fitVariable {
+        value: fitRatesButton.checked ? "rates" : "times"
+    }
+
+    onFitVariableChanged: {
+        if (fitVariable == "rates")
+            fitRatesButton.checked = true
+        else
+            fitTimesButton.checked = true
+    }
 
     implicitWidth: rootLayout.implicitWidth
     implicitHeight: rootLayout.implicitHeight
@@ -37,6 +50,7 @@ Item {
                             Layout.columnSpan: 2
                         }
                         RadioButton {
+                            id: fitTimesButton
                             text: "fit times"
                             Layout.columnSpan: 2
                         }
