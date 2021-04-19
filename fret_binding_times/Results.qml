@@ -49,14 +49,14 @@ Item {
                 }
                 GroupBox {
                     id: resultValueGroup
-                    property real kOff: {
+                    property var results: {
                         if (root.visible) {
                             backend.getResults(
                                 resultCanvas, root.minLength, minCountSel.value,
                                 fitRatesButton.checked
                             )
                         } else {
-                            NaN
+                            [NaN, NaN]
                         }
                     }
 
@@ -67,10 +67,18 @@ Item {
                         anchors.fill: parent
                         Label {
                             textFormat: Text.RichText
+                            text: "<b>k<sub>bleach</sub>:</b> "
+                        }
+                        Label {
+                            text: Number(resultValueGroup.results[0]).toLocaleString(Qt.locale(), "f", 2)
+                        }
+                        Label {}
+                        Label {
+                            textFormat: Text.RichText
                             text: "<b>k<sub>off</sub>:</b> "
                         }
                         Label {
-                            text: Number(resultValueGroup.kOff).toLocaleString(Qt.locale(), "f", 2)
+                            text: Number(resultValueGroup.results[1]).toLocaleString(Qt.locale(), "f", 2)
                         }
                         Label {
                             textFormat: Text.RichText
@@ -81,7 +89,7 @@ Item {
                             text: "<b>t<sub>off</sub>:</b> "
                         }
                         Label {
-                            text: Number(1 / resultValueGroup.kOff).toLocaleString(Qt.locale(), "f", 1)
+                            text: Number(1 / resultValueGroup.results[1]).toLocaleString(Qt.locale(), "f", 1)
                         }
                         Label {
                             text: "s"
@@ -91,7 +99,7 @@ Item {
                             text: "<b>t<sub>1/2</sub>:</b> "
                         }
                         Label {
-                            text: Number(Math.log(2) / resultValueGroup.kOff).toLocaleString(Qt.locale(), "f", 1)
+                            text: Number(Math.log(2) / resultValueGroup.results[1]).toLocaleString(Qt.locale(), "f", 1)
                         }
                         Label {
                             text: "s"

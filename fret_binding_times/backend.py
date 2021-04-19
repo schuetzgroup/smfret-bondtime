@@ -351,7 +351,7 @@ class Backend(QtCore.QObject):
     @QtCore.pyqtSlot(QtCore.QVariant, int, int, bool, result=list)
     def getResults(self, figureCanvas, minLength, minCount, fitRates):
         if not self._datasets.rowCount():
-            return np.NaN
+            return [np.NaN, np.NaN]
 
         res = []
         for i in range(self._datasets.rowCount()):
@@ -438,4 +438,4 @@ class Backend(QtCore.QObject):
 
         figureCanvas.draw_idle()
 
-        return k_off
+        return [float(k_bleach), float(k_off)]
