@@ -221,6 +221,9 @@ class Backend(QtCore.QObject):
         self._registrationLocOptions = {}
         self._fitOptions = {}
         self._saveFile = QtCore.QUrl()
+        self._survivalFuncs = {}
+        self._survivalFits = None
+        self._finalFit = None
 
     @QtCore.pyqtProperty(QtCore.QVariant, constant=True)
     def datasets(self):
@@ -265,7 +268,9 @@ class Backend(QtCore.QObject):
             io.yaml.safe_dump(data, yf)
 
         import tables, warnings
-        with pd.HDFStore(ypath.with_suffix(".h5"), "w") as s:
+        with pd.HDFStore(ypath.with_suffix(".h5"), "w") as s, \
+                warnings.catch_warnings():
+            warnings.simplefilter("ignore", tables.NaturalNameWarning)
             for i in range(self._datasets.rowCount()):
                 ekey = self._datasets.get(i, "key")
                 dset = self._datasets.get(i, "dataset")
@@ -273,10 +278,13 @@ class Backend(QtCore.QObject):
                     dkey = dset.get(j, "key")
                     ld = dset.get(j, "locData")
                     if isinstance(ld, pd.DataFrame):
-                        with warnings.catch_warnings():
-                            warnings.simplefilter("ignore",
-                                                  tables.NaturalNameWarning)
-                            s.put(f"/{ekey}/{dkey}", ld)
+                        s.put(f"/{ekey}/{dkey}", ld)
+            for t, df in self._survivalFuncs.items():
+                s.put(f"/survival_funcs/{t}", df)
+            if self._survivalFits is not None:
+                s.put("/survival_fits", self._survivalFits)
+            if self._finalFit is not None:
+                s.put("/final_fit", self._finalFit)
 
         self.saveFile = QtCore.QUrl.fromLocalFile(str(ypath))
 
@@ -389,9 +397,14 @@ class Backend(QtCore.QObject):
             m = np.sum(fit_x * fit_y) / np.sum(fit_y)
             fit = scipy.optimize.curve_fit(
                 self.survivalModel, fit_x, fit_y, p0=[a, 1 / m])[0]
-            res.append((time, x, y, use, fit))
+            res.append((time, pd.DataFrame({"t": x, "count": y, "use": use}),
+                        fit))
 
-        res = sorted(res, key=lambda x: x[0], reverse=True)
+        res = sorted(res, key=lambda x: x[0])
+        self._survivalFuncs = {x[0]: x[1] for x in res}
+        self._survivalFits = pd.DataFrame({"t": [x[0] for x in res],
+                                           "count": [x[-1][0] for x in res],
+                                           "rate": [x[-1][-1] for x in res]})
 
         fig = figureCanvas.figure
         fig.clf()
@@ -399,13 +412,15 @@ class Backend(QtCore.QObject):
         grid = fig.add_gridspec(2, 1)
 
         survAx = fig.add_subplot(grid[0])
-        for i, (t, x, y, use, fit) in enumerate(res):
+        for i, (t, d, fit) in enumerate(res):
             color = f"C{i%10}"
-            survAx.scatter(x[use], y[use], marker="o", edgecolor="none",
+            d1 = d[d["use"]]
+            survAx.scatter(d1["t"], d1["count"], marker="o", edgecolor="none",
                            facecolor=color, alpha=0.5)
-            survAx.scatter(x[~use], y[~use], marker="o", edgecolor=color,
+            d2 = d[~d["use"]]
+            survAx.scatter(d2["t"], d2["count"], marker="o", edgecolor=color,
                            facecolor="none", alpha=0.5)
-            x_fit = np.linspace(x[0], x[-1], 100)
+            x_fit = np.linspace(d["t"].min(), d["t"].max(), 100)
             survAx.plot(x_fit, self.survivalModel(x_fit, *fit), color=color,
                         label=f"{t*1000:.0f} ms ({1 / t:.1f} fps)")
         survAx.legend(loc=0)
@@ -440,7 +455,9 @@ class Backend(QtCore.QObject):
             y_t = self.lifetimeModel(x_t, t_off, t_bleach)
             timeAx.plot(x_t * 1000, y_t, "C0")
             k_off = 1 / t_off
+            k_bleach = 1 / t_bleach
 
         figureCanvas.draw_idle()
 
+        self._finalFit = pd.Series([k_bleach, k_off], index=["bleach", "off"])
         return [float(k_bleach), float(k_off)]
