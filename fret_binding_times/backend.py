@@ -361,7 +361,7 @@ class Backend(QtCore.QObject):
             frameCounts = np.concatenate(frameCounts)
             y = np.bincount(frameCounts)
             y = np.cumsum(y[::-1])[::-1]  # survival function
-            x = np.arange(1, len(y) + 1) * time
+            x = np.arange(0.5, len(y)) * time
             use = np.ones(len(x), dtype=bool)
             use[:ignoreFirst] = False
             use[y < minCount] = False
