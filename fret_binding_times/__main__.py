@@ -5,7 +5,8 @@ import sys
 from PyQt5 import QtCore, QtGui, QtQml, QtWidgets
 from sdt import gui
 
-from .backend import Backend, Dataset, Filter
+from .backend import Backend, Dataset
+from .filter import Filter
 
 
 app = QtWidgets.QApplication(sys.argv)
