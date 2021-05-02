@@ -183,12 +183,20 @@ ApplicationWindow {
                                     imSel.dataset.get(imSel.currentIndex, "locData") :
                                     null
                                 )
-                                previewFrameNumber: imSel.currentFrame
                                 imageSequence: (
                                     visible ?
                                     imSel.dataset.get(imSel.currentIndex, "corrAcceptor") :
                                     null
                                 )
+                                onPreviewFrameNumberChanged: {
+                                    imSel.currentFrame = previewFrameNumber
+                                }
+                                Connections {
+                                    target: imSel
+                                    onCurrentFrameChanged: {
+                                        filter.previewFrameNumber = imSel.currentFrame
+                                    }
+                                }
                             }
                         }
                     }
