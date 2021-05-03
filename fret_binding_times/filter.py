@@ -1,3 +1,4 @@
+import functools
 import operator
 
 from PyQt5 import QtCore
