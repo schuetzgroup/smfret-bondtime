@@ -37,7 +37,7 @@ Item {
             text: "Track all…"
             Layout.fillWidth: true
             onClicked: {
-                trackBatchWorker.func = track.getTrackFunc()
+                trackBatchWorker.func = backend.getTrackFunc()
                 trackBatchWorker.start()
                 trackBatchDialog.open()
             }

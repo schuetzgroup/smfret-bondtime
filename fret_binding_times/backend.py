@@ -10,6 +10,7 @@ import pandas as pd
 import scipy.optimize
 import scipy.ndimage
 from sdt import brightness, gui, helper, io, loc, multicolor
+import trackpy
 
 
 class Dataset(gui.Dataset):
@@ -283,6 +284,19 @@ class Backend(QtCore.QObject):
 
         return locFunc
 
+    @QtCore.pyqtSlot(result=QtCore.QVariant)
+    def getTrackFunc(self):
+        opts = self.trackOptions
+
+        def trackFunc(locData):
+            trackpy.quiet()
+            trc = trackpy.link(locData, **opts)
+            trc["filter_param"] = -1
+            trc["filter_manual"] = -1
+            return trc
+
+        return trackFunc
+
     @staticmethod
     def survivalModel(x, a, k):
         return a * np.exp(-k * x)
@@ -304,7 +318,7 @@ class Backend(QtCore.QObject):
             frameCounts = []
             for j in range(ds.rowCount()):
                 df = ds.get(j, "locData")
-                df = df[df["accepted"]]
+                df = df[(df["filter_param"] == 0) & (df["filter_manual"] == 0)]
                 fc = df.groupby("particle")["frame"].apply(np.ptp)
                 if not fc.empty:
                     # Exclude empty as they have float dtype, which does not

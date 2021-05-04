@@ -11,21 +11,33 @@ T.Filter {
     property int previewFrameNumber: -1
     property list<Item> overlays: [
         Sdt.TrackDisplay {
-            trackData: root.acceptedTracks
+            trackData: root.manualAccepted
             currentFrame: previewFrameNumber
             color: "Lime"
-            visible: !showCurrentCheck.checked && previewCheck.checked
+            visible: previewCheck.checked
         },
         Sdt.TrackDisplay {
-            trackData: root.rejectedTracks
+            trackData: root.manualUndecided
+            currentFrame: previewFrameNumber
+            color: "yellow"
+            visible: previewCheck.checked
+        },
+        Sdt.TrackDisplay {
+            trackData: root.manualRejected
             currentFrame: previewFrameNumber
             color: "red"
-            visible: showRejectedCheck.checked && previewCheck.checked
+            visible: previewCheck.checked
+        },
+        Sdt.TrackDisplay {
+            trackData: root.paramRejected
+            currentFrame: previewFrameNumber
+            color: "gray"
+            visible: previewCheck.checked
         },
         Sdt.TrackDisplay {
             trackData: root.currentTrack
             currentFrame: previewFrameNumber
-            color: "yellow"
+            color: "#8080ff"
             visible: previewCheck.checked
         }
     ]
@@ -44,7 +56,7 @@ T.Filter {
         anchors.fill: parent
 
         GroupBox {
-            title: "filter options"
+            title: "parametric filter"
             Layout.fillWidth: true
 
             GridLayout {
@@ -66,25 +78,35 @@ T.Filter {
                 Label {
                     text: "background"
                     Layout.fillWidth: true
+                    visible: false  // TODO: remove? (also further down)
                 }
-                Label { text: "<" }
+                Label {
+                    text: "<"
+                    visible: false
+                }
                 Sdt.EditableSpinBox {
                     id: bgThreshSel
                     from: 0
                     to: Sdt.Sdt.intMax
                     stepSize: 10
+                    visible: false
                 }
                 Label {
                     text: "intensity"
                     Layout.fillWidth: true
+                    visible: false
                 }
-                Label { text: ">" }
+                Label {
+                    text: ">"
+                    visible: false
+                }
                 Sdt.EditableSpinBox {
                     id: massThreshSel
                     from: 0
                     to: Sdt.Sdt.intMax
                     // decimals: 0
                     stepSize: 100
+                    visible: false
                 }
                 Label {
                     text: "min. length"
@@ -102,7 +124,7 @@ T.Filter {
         Item { height: 5 }
         GroupBox {
             Layout.fillWidth: true
-            title: "check results"
+            title: "manual filter"
 
             GridLayout {
                 anchors.fill: parent
@@ -115,29 +137,9 @@ T.Filter {
                     Layout.columnSpan: 2
                 }
                 Switch {
-                    id: showRejectedCheck
-                    text: "show rejected"
-                    checked: true
-                    enabled: previewCheck.checked
-                    Layout.columnSpan: 2
-                }
-                Switch {
-                    id: showCurrentCheck
-                    text: "show current only"
-                    checked: false
-                    enabled: previewCheck.checked
-                    Layout.columnSpan: 2
-                }
-                Switch {
                     id: firstFrameCheck
                     text: "go to first frame"
                     checked: true
-                    Layout.columnSpan: 2
-                }
-                Switch {
-                    id: browseRejectedCheck
-                    text: "browse rejected"
-                    checked: false
                     Layout.columnSpan: 2
                 }
                 Label {
@@ -148,7 +150,7 @@ T.Filter {
                     id: trackSel
                     contentItem: ComboBox {
                         editable: true
-                        model: browseRejectedCheck.checked ? root.trackList : root.acceptedTrackList
+                        model: root.trackList
                         implicitWidth: 100
                         onCurrentTextChanged: { updateCurrentTrack() }
                         onModelChanged: { updateCurrentTrack() }
@@ -169,16 +171,61 @@ T.Filter {
                 Row {
                     ToolButton {
                         icon.name: "go-first"
-                        width: trackSel.width / 2
+                        width: (trackSel.width - frameNavSep.width) / 4
                         onClicked: {
                             root.previewFrameNumber = root.currentTrackInfo.start
                         }
                     }
                     ToolButton {
                         icon.name: "go-last"
-                        width: trackSel.width / 2
+                        width: (trackSel.width - frameNavSep.width) / 4
                         onClicked: {
                             root.previewFrameNumber = root.currentTrackInfo.end
+                        }
+                    }
+                    ToolSeparator {
+                        id: frameNavSep
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    ToolButton {
+                        icon.name: "go-previous"
+                        autoRepeat: true
+                        width: (trackSel.width - frameNavSep.width) / 4
+                        onClicked: {
+                            root.previewFrameNumber -= 1
+                        }
+                    }
+                    ToolButton {
+                        icon.name: "go-next"
+                        autoRepeat: true
+                        width: (trackSel.width - frameNavSep.width) / 4
+                        onClicked: {
+                            root.previewFrameNumber += 1
+                        }
+                    }
+                }
+                Label { text: "action" }
+                Row {
+                    ToolButton {
+                        icon.name: "dialog-ok-apply"
+                        icon.color: "green"
+                        width: (trackSel.width - actionSep.width) / 2
+                        onClicked: {
+                            root.acceptTrack(root.currentTrackNo)
+                            trackSel.increase()
+                        }
+                    }
+                    ToolSeparator {
+                        id: actionSep
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    ToolButton {
+                        icon.name: "dialog-cancel"
+                        icon.color: "red"
+                        width: (trackSel.width - actionSep.width) / 2
+                        onClicked: {
+                            root.rejectTrack(root.currentTrackNo)
+                            trackSel.increase()
                         }
                     }
                 }
@@ -186,6 +233,8 @@ T.Filter {
                 Label { text: root.currentTrackInfo.mass.toFixed(0) }
                 Label { text: "background" }
                 Label { text: root.currentTrackInfo.bg.toFixed(0) }
+                Label { text: "noise" }
+                Label { text: root.currentTrackInfo.bg_dev.toFixed(0) }
                 Label { text: "length" }
                 Label { text: root.currentTrackInfo.length }
                 Label { text: "status" }
@@ -193,40 +242,6 @@ T.Filter {
             }
         }
         Item { Layout.fillHeight: true }
-        Button {
-            text: "Filter all…"
-            Layout.fillWidth: true
-            onClicked: {
-                batchWorker.func = root.getFilterFunc()
-                batchWorker.start()
-                batchDialog.open()
-            }
-        }
-    }
-
-    Dialog {
-        id: batchDialog
-        title: "Filtering…"
-        anchors.centerIn: Overlay.overlay
-        closePolicy: Popup.NoAutoClose
-        modal: true
-        footer: DialogButtonBox {
-            Button {
-                text: batchWorker.progress == batchWorker.count ? "OK" : "Abort"
-                DialogButtonBox.buttonRole: (batchWorker.progress == batchWorker.count ?
-                                             DialogButtonBox.AcceptRole :
-                                             DialogButtonBox.RejectRole)
-            }
-        }
-
-        Sdt.BatchWorker {
-            id: batchWorker
-            anchors.fill: parent
-            dataset: root.datasets
-            argRoles: ["locData", "corrAcceptor"]
-        }
-
-        onRejected: { batchWorker.abort() }
     }
 
     Component.onCompleted: { completeInit() }

@@ -6,41 +6,48 @@ import numpy as np
 from sdt import gui
 
 
+# TODO: No need to derive from OptionChooser since there are no intensive
+# tasks that need to be done in a thread
 class Filter(gui.OptionChooser):
     _invalidTrackInfo = {"start": -1, "end": -1, "mass": float("NaN"),
-                         "bg": float("NaN"), "length": 0,
-                         "status": "undefined"}
+                         "bg": float("NaN"), "bg_dev": float("NaN"),
+                         "length": 0, "status": "undefined"}
+
+    _statusMap = {-1: "undecided", 0: "accepted", 1: "rejected"}
 
     def __init__(self, parent):
         super().__init__(
             argProperties=["trackData", "imageSequence", "filterInitial",
                            "filterTerminal", "bgThresh", "massThresh",
                            "minLength"],
-            resultProperties=["acceptedTracks", "rejectedTracks"],
+            resultProperties=["paramAccepted", "paramRejected"],
             parent=parent)
         self._datasets = None
         self._trackData = None
         self._imageSequence = None
-        self._acceptedTracks = None
-        self._rejectedTracks = None
+        self._paramAccepted = None
+        self._paramRejected = None
+        self._manualAccepted = None
+        self._manualRejected = None
+        self._manualUndecided = None
         self._currentTrack = None
         self._currentTrackInfo = self._invalidTrackInfo
         self._currentTrackNo = -1
         self._trackList = []
-        self._acceptedTrackList = []
 
-        self.trackDataChanged.connect(self._updateTrackList)
-        self.acceptedTracksChanged.connect(self._updateAcceptedTrackList)
+        self.paramAcceptedChanged.connect(self._updateTrackList)
 
     datasets = gui.SimpleQtProperty(QtCore.QVariant)
     trackData = gui.SimpleQtProperty(QtCore.QVariant, comp=operator.is_)
     imageSequence = gui.SimpleQtProperty(QtCore.QVariant)
-    acceptedTracks = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
-    rejectedTracks = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
+    paramAccepted = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
+    paramRejected = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
+    manualAccepted = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
+    manualRejected = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
+    manualUndecided = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
     currentTrack = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
     currentTrackInfo = gui.SimpleQtProperty("QVariantMap", readOnly=True)
     trackList = gui.SimpleQtProperty(list, readOnly=True)
-    acceptedTrackList = gui.SimpleQtProperty(list, readOnly=True)
     filterInitial = gui.QmlDefinedProperty()
     filterTerminal = gui.QmlDefinedProperty()
     massThresh = gui.QmlDefinedProperty()
@@ -72,9 +79,9 @@ class Filter(gui.OptionChooser):
                 self._currentTrackInfo = {
                     "start": int(f.min()), "end": int(f.max()),
                     "mass": float(td["mass"].mean()),
-                    "bg": float(td["bg"].mean()), "length": len(td),
-                    "status": ("accepted" if td["accepted"].iloc[0]
-                               else "rejected")}
+                    "bg": float(td["bg"].mean()),
+                    "bg_dev": float(td["bg_dev"].mean()), "length": len(td),
+                    "status": self._statusMap[td["filter_manual"].iloc[0]]}
         self.currentTrackNoChanged.emit()
         self.currentTrackChanged.emit()
         self.currentTrackInfoChanged.emit()
@@ -85,54 +92,69 @@ class Filter(gui.OptionChooser):
         if trackData is None or imageSequence is None:
             return None, None
         n_frames = len(imageSequence)
-        trackData["accepted"] = True
+        trackData["filter_param"] = 0
         if filterInitial:
             bad_p = trackData.loc[trackData["frame"] == 0, "particle"].unique()
             trackData.loc[trackData["particle"].isin(bad_p),
-                          "accepted"] = False
+                          "filter_param"] = 1
         if filterTerminal:
             bad_p = trackData.loc[trackData["frame"] == n_frames - 1,
                                   "particle"].unique()
             trackData.loc[trackData["particle"].isin(bad_p),
-                          "accepted"] = False
-        if bgThresh > 0:
-            bad_p = trackData.groupby("particle")["bg"].mean() >= bgThresh
-            bad_p = bad_p.index[bad_p.to_numpy()]
-            trackData.loc[trackData["particle"].isin(bad_p),
-                          "accepted"] = False
-        if massThresh > 0:
-            bad_p = trackData.groupby("particle")["mass"].mean() <= massThresh
-            bad_p = bad_p.index[bad_p.to_numpy()]
-            trackData.loc[trackData["particle"].isin(bad_p),
-                          "accepted"] = False
+                          "filter_param"] = 1
+        # if bgThresh > 0:
+        #     bad_p = trackData.groupby("particle")["bg"].mean() >= bgThresh
+        #     bad_p = bad_p.index[bad_p.to_numpy()]
+        #     trackData.loc[trackData["particle"].isin(bad_p),
+        #                   "filter_param"] = 1
+        # if massThresh > 0:
+        #     bad_p = trackData.groupby("particle")["mass"].mean() <= massThresh
+        #     bad_p = bad_p.index[bad_p.to_numpy()]
+        #     trackData.loc[trackData["particle"].isin(bad_p),
+        #                   "filter_param"] = 1
         if minLength > 1:
             bad_p = (trackData.groupby("particle")["frame"].apply(len) <
                      minLength)
             bad_p = bad_p.index[bad_p.to_numpy()]
             trackData.loc[trackData["particle"].isin(bad_p),
-                          "accepted"] = False
-        return (trackData[trackData["accepted"]],
-                trackData[~trackData["accepted"]])
+                          "filter_param"] = 1
+        fp = trackData["filter_param"] == 0
+        return trackData[fp], trackData[~fp]
 
     def _updateTrackList(self):
         if self._trackData is None and self._trackList:
             self._trackList = []
             self.trackListChanged.emit()
             return
-        p = np.sort(self._trackData["particle"].unique()).tolist()
+        self._updateManualTracks()
+        p = np.sort(self._paramAccepted["particle"].unique()).tolist()
         if self._trackList != p:
             self._trackList = p
             self.trackListChanged.emit()
 
-    def _updateAcceptedTrackList(self):
-        if self._acceptedTracks is None and self._acceptedTrackList:
-            self._acceptedTrackList = []
-            self.acceptedTrackListChanged.emit()
-            return
-        p = np.sort(self._acceptedTracks["particle"].unique()).tolist()
-        if self._acceptedTrackList != p:
-            self._acceptedTrackList = p
-            self.acceptedTrackListChanged.emit()
+    @QtCore.pyqtSlot(int)
+    def acceptTrack(self, index):
+        self._trackData.loc[self._trackData["particle"] == index,
+                            "filter_manual"] = 0
+        self._updateManualTracks()
+
+    @QtCore.pyqtSlot(int)
+    def rejectTrack(self, index):
+        self._trackData.loc[self._trackData["particle"] == index,
+                            "filter_manual"] = 1
+        self._updateManualTracks()
+
+    def _updateManualTracks(self):
+        fp = self._trackData["filter_param"] == 0
+        self._manualAccepted = self._trackData[
+            fp & (self._trackData["filter_manual"] == 0)]
+        self.manualAcceptedChanged.emit()
+        self._manualRejected = self._trackData[
+            fp & (self._trackData["filter_manual"] == 1)]
+        self.manualRejectedChanged.emit()
+        self._manualUndecided = self._trackData[
+            fp & (self._trackData["filter_manual"] == -1)]
+        self.manualUndecidedChanged.emit()
 
     @QtCore.pyqtSlot(result=QtCore.QVariant)
     def getFilterFunc(self):
