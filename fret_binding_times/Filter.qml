@@ -60,45 +60,34 @@ T.Filter {
             Layout.fillWidth: true
 
             GridLayout {
-                columns: 3
+                columns: 2
                 anchors.fill: parent
 
                 Switch {
                     id: filterInitialCheck
                     text: "remove initially present tracks"
                     checked: true
-                    Layout.columnSpan: 3
+                    Layout.columnSpan: 2
                 }
                 Switch {
                     id: filterTerminalCheck
                     text: "remove terminally present tracks"
                     checked: true
-                    Layout.columnSpan: 3
+                    Layout.columnSpan: 2
                 }
                 Label {
-                    text: "background"
+                    text: "max. background"
                     Layout.fillWidth: true
-                    visible: false  // TODO: remove? (also further down)
-                }
-                Label {
-                    text: "<"
-                    visible: false
                 }
                 Sdt.EditableSpinBox {
                     id: bgThreshSel
                     from: 0
                     to: Sdt.Sdt.intMax
                     stepSize: 10
-                    visible: false
                 }
                 Label {
-                    text: "intensity"
+                    text: "min. intensity"
                     Layout.fillWidth: true
-                    visible: false
-                }
-                Label {
-                    text: ">"
-                    visible: false
                 }
                 Sdt.EditableSpinBox {
                     id: massThreshSel
@@ -106,12 +95,10 @@ T.Filter {
                     to: Sdt.Sdt.intMax
                     // decimals: 0
                     stepSize: 100
-                    visible: false
                 }
                 Label {
                     text: "min. length"
                     Layout.fillWidth: true
-                    Layout.columnSpan: 2
                 }
                 Sdt.EditableSpinBox {
                     id: minLengthSel

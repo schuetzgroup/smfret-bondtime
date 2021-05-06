@@ -102,16 +102,16 @@ class Filter(gui.OptionChooser):
                                   "particle"].unique()
             trackData.loc[trackData["particle"].isin(bad_p),
                           "filter_param"] = 1
-        # if bgThresh > 0:
-        #     bad_p = trackData.groupby("particle")["bg"].mean() >= bgThresh
-        #     bad_p = bad_p.index[bad_p.to_numpy()]
-        #     trackData.loc[trackData["particle"].isin(bad_p),
-        #                   "filter_param"] = 1
-        # if massThresh > 0:
-        #     bad_p = trackData.groupby("particle")["mass"].mean() <= massThresh
-        #     bad_p = bad_p.index[bad_p.to_numpy()]
-        #     trackData.loc[trackData["particle"].isin(bad_p),
-        #                   "filter_param"] = 1
+        if bgThresh > 0:
+            bad_p = trackData.groupby("particle")["bg"].mean() >= bgThresh
+            bad_p = bad_p.index[bad_p.to_numpy()]
+            trackData.loc[trackData["particle"].isin(bad_p),
+                          "filter_param"] = 1
+        if massThresh > 0:
+            bad_p = trackData.groupby("particle")["mass"].mean() <= massThresh
+            bad_p = bad_p.index[bad_p.to_numpy()]
+            trackData.loc[trackData["particle"].isin(bad_p),
+                          "filter_param"] = 1
         if minLength > 1:
             bad_p = (trackData.groupby("particle")["frame"].apply(len) <
                      minLength)
