@@ -70,7 +70,7 @@ Item {
                                 fitRatesButton.checked
                             )
                         } else {
-                            [NaN, NaN]
+                            []
                         }
                     }
 
@@ -84,7 +84,9 @@ Item {
                             text: "<b>k<sub>bleach</sub>:</b> "
                         }
                         Label {
-                            text: Number(resultValueGroup.results[0]).toLocaleString(Qt.locale(), "f", 2)
+                            text: (Number(resultValueGroup.results.k_bleach).toLocaleString(Qt.locale(), "f", 2) +
+                                   " ± " +
+                                   Number(resultValueGroup.results.k_bleach_err).toLocaleString(Qt.locale(), "f", 3))
                         }
                         Label {}
                         Label {
@@ -92,7 +94,9 @@ Item {
                             text: "<b>k<sub>off</sub>:</b> "
                         }
                         Label {
-                            text: Number(resultValueGroup.results[1]).toLocaleString(Qt.locale(), "f", 2)
+                            text: (Number(resultValueGroup.results.k_off).toLocaleString(Qt.locale(), "f", 2) +
+                                   " ± " +
+                                   Number(resultValueGroup.results.k_off_err).toLocaleString(Qt.locale(), "f", 3))
                         }
                         Label {
                             textFormat: Text.RichText
@@ -103,7 +107,9 @@ Item {
                             text: "<b>t<sub>off</sub>:</b> "
                         }
                         Label {
-                            text: Number(1 / resultValueGroup.results[1]).toLocaleString(Qt.locale(), "f", 1)
+                            text: (Number(resultValueGroup.results.t_off).toLocaleString(Qt.locale(), "f", 1) +
+                                   " ± " +
+                                   Number(resultValueGroup.results.t_off_err).toLocaleString(Qt.locale(), "f", 2))
                         }
                         Label {
                             text: "s"
@@ -113,7 +119,9 @@ Item {
                             text: "<b>t<sub>1/2</sub>:</b> "
                         }
                         Label {
-                            text: Number(Math.log(2) / resultValueGroup.results[1]).toLocaleString(Qt.locale(), "f", 1)
+                            text: (Number(resultValueGroup.results.t_off * Math.log(2)).toLocaleString(Qt.locale(), "f", 1) +
+                                   " ± " +
+                                   Number(resultValueGroup.results.t_off_err * Math.log(2)).toLocaleString(Qt.locale(), "f", 2))
                         }
                         Label {
                             text: "s"
