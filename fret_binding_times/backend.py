@@ -411,7 +411,8 @@ class Backend(QtCore.QObject):
                 lambda x, ko, kb: ko + x * kb,
                 1 / self._survivalFits["t"],
                 self._survivalFits["rate"], p0=[k_off, k_bleach],
-                sigma=self._survivalFits["rate_err"])
+                sigma=self._survivalFits["rate_err"],
+                absolute_sigma=True)
             k_off, k_bleach = rates
             k_off_err, k_bleach_err = np.sqrt(np.diag(rates_cov))
             t_off = 1 / k_off
@@ -433,7 +434,8 @@ class Backend(QtCore.QObject):
             times, times_cov = scipy.optimize.curve_fit(
                 self.lifetimeModel, self._survivalFits["t"],
                 self._survivalFits["tau"], p0=[1 / k_off, 1 / k_bleach],
-                sigma=self._survivalFits["tau_err"])
+                sigma=self._survivalFits["tau_err"],
+                absolute_sigma=True)
             t_off, t_bleach = times
             t_off_err, t_bleach_err = np.sqrt(np.diag(times_cov))
             k_off = 1 / t_off
