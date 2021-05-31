@@ -290,7 +290,12 @@ class Backend(QtCore.QObject):
 
         def trackFunc(locData):
             trackpy.quiet()
-            trc = trackpy.link(locData, **opts)
+            if locData.empty:
+                trc = locData.copy()
+                # This adds the "particle" column
+                trc["particle"] = 0
+            else:
+                trc = trackpy.link(locData, **opts)
             trc["filter_param"] = -1
             trc["filter_manual"] = -1
             return trc
