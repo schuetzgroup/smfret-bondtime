@@ -342,33 +342,40 @@ class Backend(QtCore.QObject):
             use = np.ones(len(x), dtype=bool)
             use[y < minCount] = False
 
-            fit_x = x[use]
-            fit_y = y[use]
-            # estimate amplitude as number of events
-            a = fit_y[0]
-            # estimate 1 / rate as mean of survival times
-            m = np.sum(fit_x * fit_y) / np.sum(fit_y)
-
             r = {"time": time,
                  "surv": pd.DataFrame({"t": x, "count": y, "use": use})}
-            if fitRates:
-                fit, cov = scipy.optimize.curve_fit(
-                    self.survivalModelRates, fit_x, fit_y, p0=[a, 1 / m])
-                err = np.sqrt(np.diag(cov))
-                r["rate_fit"] = fit
-                r["rate_err"] = err
-                r["tau_fit"] = [fit[0], 1 / fit[1]]
-                # error propagation for x -> 1 / x
-                r["tau_err"] = [err[0], 1 / (fit[1] * fit[1]) * err[1]]
-            else:
-                fit, cov = scipy.optimize.curve_fit(
-                    self.survivalModelTimes, fit_x, fit_y, p0=[a, m])
-                err = np.sqrt(np.diag(cov))
-                r["tau_fit"] = fit
-                r["tau_err"] = err
-                r["rate_fit"] = [fit[0], 1 / fit[1]]
-                # error propagation for x -> 1 / x
-                r["rate_err"] = [err[0], 1 / (fit[1] * fit[1]) * err[1]]
+            try:
+                fit_x = x[use]
+                fit_y = y[use]
+                # estimate amplitude as number of events
+                a = fit_y[0]
+                # estimate 1 / rate as mean of survival times
+                m = np.sum(fit_x * fit_y) / np.sum(fit_y)
+
+                if fitRates:
+                    fit, cov = scipy.optimize.curve_fit(
+                        self.survivalModelRates, fit_x, fit_y, p0=[a, 1 / m])
+                    err = np.sqrt(np.diag(cov))
+                    r["rate_fit"] = fit
+                    r["rate_err"] = err
+                    r["tau_fit"] = [fit[0], 1 / fit[1]]
+                    # error propagation for x -> 1 / x
+                    r["tau_err"] = [err[0], 1 / (fit[1] * fit[1]) * err[1]]
+                else:
+                    fit, cov = scipy.optimize.curve_fit(
+                        self.survivalModelTimes, fit_x, fit_y, p0=[a, m])
+                    err = np.sqrt(np.diag(cov))
+                    r["tau_fit"] = fit
+                    r["tau_err"] = err
+                    r["rate_fit"] = [fit[0], 1 / fit[1]]
+                    # error propagation for x -> 1 / x
+                    r["rate_err"] = [err[0], 1 / (fit[1] * fit[1]) * err[1]]
+            except (IndexError, TypeError):
+                # IndexError: a = fit_y[0] fails because there isn't a single
+                # data point
+                # TypeError: Not enough data for curve_fit
+                r["tau_fit"] = r["tau_err"] = r["rate_fit"] = r["rate_err"] = \
+                    [np.NaN] * 2
             res.append(r)
 
         res = sorted(res, key=lambda x: x["time"])
@@ -381,6 +388,8 @@ class Backend(QtCore.QObject):
              "tau": [x["tau_fit"][-1] for x in res],
              "tau_err": [x["tau_err"][-1] for x in res]}
         self._survivalFits = pd.DataFrame(sf)
+        validFits = self._survivalFits[np.all(np.isfinite(self._survivalFits),
+                                              axis=1)]
 
         fig = figureCanvas.figure
         fig.clf()
@@ -408,16 +417,13 @@ class Backend(QtCore.QObject):
         survAx.set_xlabel("survival time [s]")
         survAx.set_ylabel("cumulated count")
 
-        k_bleach, k_off = np.polyfit(1 / self._survivalFits["t"],
-                                     self._survivalFits["rate"], 1)
+        k_bleach, k_off = np.polyfit(1 / validFits["t"], validFits["rate"], 1)
 
         if fitRates:
             rates, rates_cov = scipy.optimize.curve_fit(
-                lambda x, ko, kb: ko + x * kb,
-                1 / self._survivalFits["t"],
-                self._survivalFits["rate"], p0=[k_off, k_bleach],
-                sigma=self._survivalFits["rate_err"],
-                absolute_sigma=True)
+                lambda x, ko, kb: ko + x * kb, 1 / validFits["t"],
+                validFits["rate"], p0=[k_off, k_bleach],
+                sigma=validFits["rate_err"], absolute_sigma=True)
             k_off, k_bleach = rates
             k_off_err, k_bleach_err = np.sqrt(np.diag(rates_cov))
             t_off = 1 / k_off
@@ -425,21 +431,19 @@ class Backend(QtCore.QObject):
             t_bleach = 1 / k_bleach
             t_bleach_err = 1 / (k_bleach * k_bleach) * k_bleach_err
             rateAx = fig.add_subplot(grid[1])
-            rateAx.errorbar(1 / self._survivalFits["t"],
-                            self._survivalFits["rate"],
-                            self._survivalFits["rate_err"], fmt=".")
+            rateAx.errorbar(1 / validFits["t"], validFits["rate"],
+                            validFits["rate_err"], fmt=".")
             rateAx.set_title("measured off-rates")
             rateAx.set_xlabel("frame rate [fps]")
             rateAx.set_ylabel("apparent off-rate [s$^{-1}$]")
-            x_r = np.array([1 / self._survivalFits["t"].iloc[-1],
-                            1 / self._survivalFits["t"].iloc[0]])
+            x_r = np.array([1 / validFits["t"].iloc[-1],
+                            1 / validFits["t"].iloc[0]])
             y_r = k_off + k_bleach * x_r
             rateAx.plot(x_r, y_r, "C0")
         else:
             times, times_cov = scipy.optimize.curve_fit(
-                self.lifetimeModel, self._survivalFits["t"],
-                self._survivalFits["tau"], p0=[1 / k_off, 1 / k_bleach],
-                sigma=self._survivalFits["tau_err"],
+                self.lifetimeModel, validFits["t"], validFits["tau"],
+                p0=[1 / k_off, 1 / k_bleach], sigma=validFits["tau_err"],
                 absolute_sigma=True)
             t_off, t_bleach = times
             t_off_err, t_bleach_err = np.sqrt(np.diag(times_cov))
@@ -448,14 +452,13 @@ class Backend(QtCore.QObject):
             k_bleach = 1 / t_bleach
             k_bleach_err = 1 / (t_bleach * t_bleach) * t_bleach_err
             timeAx = fig.add_subplot(grid[1])
-            timeAx.errorbar(self._survivalFits["t"] * 1000,
-                            self._survivalFits["tau"],
-                            self._survivalFits["tau_err"], fmt=".")
+            timeAx.errorbar(validFits["t"] * 1000, validFits["tau"],
+                            validFits["tau_err"], fmt=".")
             timeAx.set_title("measured lifetimes")
             timeAx.set_xlabel("time per frame [ms]")
             timeAx.set_ylabel("apparent lifetime [s]")
-            x_t = np.linspace(self._survivalFits["t"].iloc[0],
-                              self._survivalFits["t"].iloc[-1], 100)
+            x_t = np.linspace(validFits["t"].iloc[0], validFits["t"].iloc[-1],
+                              100)
             y_t = self.lifetimeModel(x_t, t_off, t_bleach)
             timeAx.plot(x_t * 1000, y_t, "C0")
 
