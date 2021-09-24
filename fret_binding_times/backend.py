@@ -76,6 +76,9 @@ class Dataset(gui.Dataset):
             fname = self.get(index, self.fileRoles[chan["source_id"]])
             fname = Path(self.dataDir, fname)
             seq = io.ImageSequence(fname).open()
+            # Remember frame count. Necessary to adjust frame numbers after
+            # localization in slices. See `Backend.getLocateFunc`.
+            cnt = len(seq)
             if chan["roi"] is not None:
                 seq = chan["roi"](seq)
             if self._frameSel.excitation_seq:
@@ -84,6 +87,7 @@ class Dataset(gui.Dataset):
                 # FIXME: Is donor garanteed to be channel 2?
                 seq = self._registrator(seq, channel=2,
                                         cval=self._bleedThrough["background"])
+            seq.orig_frame_count = cnt
             return seq
         if role == "corrAcceptor":
             d = self.get(index, "donor")
@@ -92,14 +96,14 @@ class Dataset(gui.Dataset):
             bt = self._bleedThrough["factor"]
             smt = self._bleedThrough["smooth"]
 
-            @helper.pipeline(ancestor_count="all")
             def corr(donor, acceptor):
                 noBg = np.asanyarray(donor, dtype=float) - bg
                 if smt >= 1e-3:
                     noBg = scipy.ndimage.gaussian_filter(noBg, smt)
                 return acceptor - noBg * bt
 
-            return corr(d, a)
+            return helper.Pipeline(corr, d, a,
+                                   propagate_attrs={"orig_frame_count"})
         return super().get(index, role)
 
     def _imageDataChanged(self):
@@ -276,9 +280,15 @@ class Backend(QtCore.QObject):
     def getLocateFunc(self):
         f = getattr(loc, self.locAlgorithm).batch
         opts = self.locOptions
+        fsel = multicolor.FrameSelector(self.datasets.excitationSeq)
 
         def locFunc(fretImage):
             lc = f(fretImage, **opts)
+            # Since sdt-python 17.1, frame numbers are preserved when using
+            # slices of ImageSequence.
+            lc["frame"] = fsel.renumber_frames(
+                lc["frame"].to_numpy(), "d",
+                n_frames=fretImage.orig_frame_count)
             brightness.from_raw_image(lc, fretImage, radius=3, mask="circle")
             return lc
 
