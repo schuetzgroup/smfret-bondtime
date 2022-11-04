@@ -1,7 +1,7 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.12
 import QtQuick.Dialogs 1.3 as QQDialogs
-import QtQuick.Layouts 1.12
+import QtQuick.Layouts 1.15
 import Qt.labs.settings 1.0
 import SdtGui 0.1 as Sdt
 import BindingTime 1.0
@@ -112,128 +112,113 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
 
-                RowLayout {
-                    anchors.fill: parent
+            RowLayout {
+                StackLayout {
+                    id: previewStack
 
-                    Item {
-                        Layout.fillHeight: true
-                        implicitWidth: previewStack.implicitWidth
-                        implicitHeight: previewStack.implicitHeight
+                    Layout.fillWidth: false
+                    Layout.fillHeight: true
 
-                        StackLayout {
-                            id: previewStack
+                    property var indexMap: {
+                        3: 0,  // bleed-through
+                        4: 1,  // locate
+                        5: 2,  // track
+                        6: 3,  // filter
+                    }
+                    property Item currentItem: itemAt(currentIndex)
 
-                            anchors.fill: parent
+                    currentIndex: indexMap[actionTab.currentIndex] || 0
 
-                            property var indexMap: {
-                                3: 0,  // bleed-through
-                                4: 1,  // locate
-                                5: 2,  // track
-                                6: 3,  // filter
-                            }
-                            property Item currentItem: itemAt(currentIndex)
-
-                            currentIndex: indexMap[actionTab.currentIndex] || 0
-
-                            BleedThrough {
-                                id: bt
-                                background: backend.datasets.bleedThrough.background
-                                onBackgroundChanged: {
-                                    var bt = backend.datasets.bleedThrough
-                                    bt.background = background
-                                    backend.datasets.bleedThrough = bt
-                                }
-                                factor: backend.datasets.bleedThrough.factor
-                                onFactorChanged: {
-                                    var bt = backend.datasets.bleedThrough
-                                    bt.factor = factor
-                                    backend.datasets.bleedThrough = bt
-                                }
-                                smooth: backend.datasets.bleedThrough.smooth
-                                onSmoothChanged: {
-                                    var bt = backend.datasets.bleedThrough
-                                    bt.smooth = smooth
-                                    backend.datasets.bleedThrough = bt
-                                }
-                            }
-                            Locator {
-                                id: loc
-                                datasets: backend.datasets
-                                previewImage: visible ? imSel.image : null
-                            }
-                            Tracker {
-                                id: track
-                                datasets: backend.datasets
-                                previewData: (
-                                    visible ?
-                                    imSel.dataset.get(imSel.currentIndex, "locData") :
-                                    null
-                                )
-                                previewFrameNumber: imSel.currentFrame
-                            }
-                            Filter {
-                                id: filter
-                                datasets: backend.datasets
-                                trackData: (
-                                    visible ?
-                                    imSel.dataset.get(imSel.currentIndex, "locData") :
-                                    null
-                                )
-                                imageSequence: (
-                                    visible ?
-                                    imSel.dataset.get(imSel.currentIndex, "corrAcceptor") :
-                                    null
-                                )
-                                onPreviewFrameNumberChanged: {
-                                    imSel.currentFrame = previewFrameNumber
-                                }
-                                Connections {
-                                    target: imSel
-                                    onCurrentFrameChanged: {
-                                        filter.previewFrameNumber = imSel.currentFrame
-                                    }
-                                }
-                            }
+                    BleedThrough {
+                        id: bt
+                        background: backend.datasets.bleedThrough.background
+                        onBackgroundChanged: {
+                            var bt = backend.datasets.bleedThrough
+                            bt.background = background
+                            backend.datasets.bleedThrough = bt
+                        }
+                        factor: backend.datasets.bleedThrough.factor
+                        onFactorChanged: {
+                            var bt = backend.datasets.bleedThrough
+                            bt.factor = factor
+                            backend.datasets.bleedThrough = bt
+                        }
+                        smooth: backend.datasets.bleedThrough.smooth
+                        onSmoothChanged: {
+                            var bt = backend.datasets.bleedThrough
+                            bt.smooth = smooth
+                            backend.datasets.bleedThrough = bt
                         }
                     }
-                    Item { width: 2 }
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            RowLayout {
-                                Label { text: "dataset" }
-                                Sdt.DatasetSelector {
-                                    id: datasetSel
-                                    datasets: backend.datasets
-                                }
-                                Item { width: 5 }
-                                Sdt.ImageSelector {
-                                    id: imSel
-                                    editable: false
-                                    dataset: datasetSel.currentDataset
-                                    textRole: "key"
-                                    imageRole: previewStack.currentItem.imageRole || "corrAcceptor"
-                                    Layout.fillWidth: true
-                                }
-                            }
-                            Sdt.ImageDisplay {
-                                id: imDisp
-                                image: imSel.image
-                                overlays: previewStack.currentItem.overlays || []
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
+                    Locator {
+                        id: loc
+                        datasets: backend.datasets
+                        previewImage: visible ? imSel.image : null
+                    }
+                    Tracker {
+                        id: track
+                        datasets: backend.datasets
+                        previewData: (
+                            visible ?
+                            imSel.dataset.get(imSel.currentIndex, "locData") :
+                            null
+                        )
+                        previewFrameNumber: imSel.currentFrame
+                    }
+                    Filter {
+                        id: filter
+                        datasets: backend.datasets
+                        trackData: (
+                            visible ?
+                            imSel.dataset.get(imSel.currentIndex, "locData") :
+                            null
+                        )
+                        imageSequence: (
+                            visible ?
+                            imSel.dataset.get(imSel.currentIndex, "corrAcceptor") :
+                            null
+                        )
+                        onPreviewFrameNumberChanged: {
+                            imSel.currentFrame = previewFrameNumber
+                        }
+                        Connections {
+                            target: imSel
+                            onCurrentFrameChanged: {
+                                filter.previewFrameNumber = imSel.currentFrame
                             }
                         }
                     }
                 }
+                Item { width: 2 }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    RowLayout {
+                        Label { text: "dataset" }
+                        Sdt.DatasetSelector {
+                            id: datasetSel
+                            datasets: backend.datasets
+                        }
+                        Item { width: 5 }
+                        Sdt.ImageSelector {
+                            id: imSel
+                            editable: false
+                            dataset: datasetSel.currentDataset
+                            textRole: "key"
+                            imageRole: previewStack.currentItem.imageRole || "corrAcceptor"
+                            Layout.fillWidth: true
+                        }
+                    }
+                    Sdt.ImageDisplay {
+                        id: imDisp
+                        image: imSel.image
+                        overlays: previewStack.currentItem.overlays || []
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                    }
+                }
             }
+
             Results {
                 id: results
 
