@@ -46,10 +46,10 @@ Item {
         modal: true
         footer: DialogButtonBox {
             Button {
-                text: batchWorker.progress == batchWorker.count ? "OK" : "Abort"
-                DialogButtonBox.buttonRole: (batchWorker.progress == batchWorker.count ?
-                                             DialogButtonBox.AcceptRole :
-                                             DialogButtonBox.RejectRole)
+                text: batchWorker.isRunning ? "Abort" : "OK"
+                DialogButtonBox.buttonRole: (batchWorker.isRunning ?
+                                             DialogButtonBox.RejectRole :
+                                             DialogButtonBox.AcceptRole)
             }
         }
 
@@ -59,6 +59,8 @@ Item {
             dataset: root.datasets
             argRoles: ["corrAcceptor"]
             resultRole: "locData"
+            displayRole: "source_0"
+            errorPolicy: Sdt.BatchWorker.ErrorPolicy.Abort
         }
 
         onRejected: { batchWorker.abort() }
