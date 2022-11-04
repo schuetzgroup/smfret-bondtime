@@ -119,6 +119,10 @@ ApplicationWindow {
 
                     Layout.fillWidth: false
                     Layout.fillHeight: true
+                    // not sure why this is needed, but otherwise implicitWidth
+                    // is 0... (Qt 5.15.6)
+                    implicitWidth: Math.max(bt.implicitWidth, loc.implicitWidth,
+                                            track.implicitWidth, filter.implicitWidth)
 
                     property var indexMap: {
                         3: 0,  // bleed-through
