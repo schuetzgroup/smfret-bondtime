@@ -15,30 +15,35 @@ T.Filter {
             currentFrame: previewFrameNumber
             color: "Lime"
             visible: previewCheck.checked
+            markerSize: 3.0
         },
         Sdt.TrackDisplay {
             trackData: root.manualUndecided
             currentFrame: previewFrameNumber
             color: "yellow"
             visible: previewCheck.checked
+            markerSize: 3.0
         },
         Sdt.TrackDisplay {
             trackData: root.manualRejected
             currentFrame: previewFrameNumber
             color: "red"
             visible: previewCheck.checked
+            markerSize: 3.0
         },
         Sdt.TrackDisplay {
             trackData: root.paramRejected
             currentFrame: previewFrameNumber
             color: "gray"
             visible: previewCheck.checked
+            markerSize: 3.0
         },
         Sdt.TrackDisplay {
             trackData: root.currentTrack
             currentFrame: previewFrameNumber
             color: "#8080ff"
             visible: previewCheck.checked
+            markerSize: 3.0
         }
     ]
     property alias filterInitial: filterInitialCheck.checked
