@@ -53,6 +53,7 @@ class Filter(gui.OptionChooser):
     massThresh = gui.QmlDefinedProperty()
     bgThresh = gui.QmlDefinedProperty()
     minLength = gui.QmlDefinedProperty()
+    timeTraceFig = gui.QmlDefinedProperty()
 
     currentTrackNoChanged = QtCore.pyqtSignal()
 
@@ -66,6 +67,7 @@ class Filter(gui.OptionChooser):
             return
         self._currentTrackNo = t
         if self._trackData is None or t < 0:
+            td = None
             self._currentTrack = None
             self._currentTrackInfo = self._invalidTrackInfo
         else:
@@ -82,6 +84,18 @@ class Filter(gui.OptionChooser):
                     "bg": float(td["bg"].mean()),
                     "bg_dev": float(td["bg_dev"].mean()), "length": len(td),
                     "status": self._statusMap[td["filter_manual"].iloc[0]]}
+        if td is not None and self.timeTraceFig is not None:
+            fig = self.timeTraceFig.figure
+            fig.set_constrained_layout(True)
+            try:
+                ax = fig.axes[0]
+            except IndexError:
+                ax = fig.add_subplot()
+            ax.cla()
+            ax.plot(td["frame"], td["mass"])
+            ax.set_xlabel("frame")
+            ax.set_ylabel("intensity")
+            fig.canvas.draw_idle()
         self.currentTrackNoChanged.emit()
         self.currentTrackChanged.emit()
         self.currentTrackInfoChanged.emit()

@@ -57,6 +57,7 @@ T.Filter {
     property alias massThresh: massThreshSel.value
     property alias bgThresh: bgThreshSel.value
     property alias minLength: minLengthSel.value
+    property Item timeTraceFig: null
 
     implicitWidth: rootLayout.implicitWidth
     implicitHeight: rootLayout.implicitHeight

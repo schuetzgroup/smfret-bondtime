@@ -156,9 +156,11 @@ ApplicationWindow {
                         id: filter
                         datasets: backend.datasets
                         frameCount: imSel.currentFrameCount
+                        timeTraceFig: timeTraceFig
                         onPreviewFrameNumberChanged: {
                             imSel.currentFrame = previewFrameNumber
                         }
+
                         Connections {
                             target: imSel
                             function onCurrentFrameChanged() {
@@ -168,29 +170,43 @@ ApplicationWindow {
                     }
                 }
                 Item { width: 2 }
-                ColumnLayout {
+                SplitView {
+                    id: split
+
+                    orientation: Qt.Vertical
                     Layout.fillWidth: true
-                    RowLayout {
-                        Label { text: "dataset" }
-                        Sdt.DatasetSelector {
-                            id: datasetSel
-                            datasets: backend.datasets
+                    Layout.fillHeight: true
+
+                    ColumnLayout {
+                        SplitView.fillHeight: true
+
+                        RowLayout {
+                            Label { text: "dataset" }
+                            Sdt.DatasetSelector {
+                                id: datasetSel
+                                datasets: backend.datasets
+                            }
+                            Item { width: 5 }
+                            Sdt.ImageSelector {
+                                id: imSel
+                                editable: false
+                                dataset: datasetSel.currentDataset
+                                textRole: "key"
+                                imageRole: "corrAcceptor"
+                                Layout.fillWidth: true
+                            }
                         }
-                        Item { width: 5 }
-                        Sdt.ImageSelector {
-                            id: imSel
-                            editable: false
-                            dataset: datasetSel.currentDataset
-                            textRole: "key"
-                            imageRole: "corrAcceptor"
+                        Sdt.ImageDisplay {
+                            id: imDisp
+                            image: imSel.image
                             Layout.fillWidth: true
+                            Layout.fillHeight: true
                         }
                     }
-                    Sdt.ImageDisplay {
-                        id: imDisp
-                        image: imSel.image
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
+                    Sdt.FigureCanvasAgg {
+                        id: timeTraceFig
+                        SplitView.preferredHeight: split.height / 4.0
+                        visible: false
                     }
                 }
             }
@@ -291,6 +307,10 @@ ApplicationWindow {
                 PropertyChanges {
                     target: imDisp
                     overlays: filter.overlays
+                }
+                PropertyChanges {
+                    target: timeTraceFig
+                    visible: true
                 }
                 PropertyChanges {
                     target: filter
