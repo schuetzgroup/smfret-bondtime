@@ -1,5 +1,5 @@
-import QtQuick 2.12
-import QtQuick.Controls 2.12
+import QtQuick 2.15
+import QtQuick.Controls 2.15
 import QtQuick.Dialogs 1.3 as QQDialogs
 import QtQuick.Layouts 1.15
 import Qt.labs.settings 1.0
@@ -63,15 +63,7 @@ ApplicationWindow {
         }
 
         StackLayout {
-            currentIndex: {
-                var idx = actionTab.currentIndex
-                if (idx <= 2)
-                    idx
-                else if ((3 <= idx) && (idx <= 6))
-                    3
-                else if (idx >= 7)
-                    idx - 3
-            }
+            id: mainStack
 
             ColumnLayout {
                 Sdt.FrameSelector {
@@ -124,16 +116,6 @@ ApplicationWindow {
                     implicitWidth: Math.max(bt.implicitWidth, loc.implicitWidth,
                                             track.implicitWidth, filter.implicitWidth)
 
-                    property var indexMap: {
-                        3: 0,  // bleed-through
-                        4: 1,  // locate
-                        5: 2,  // track
-                        6: 3,  // filter
-                    }
-                    property Item currentItem: itemAt(currentIndex)
-
-                    currentIndex: indexMap[actionTab.currentIndex] || 0
-
                     BleedThrough {
                         id: bt
                         background: backend.datasets.bleedThrough.background
@@ -173,16 +155,6 @@ ApplicationWindow {
                     Filter {
                         id: filter
                         datasets: backend.datasets
-                        trackData: (
-                            visible ?
-                            imSel.dataset.get(imSel.currentIndex, "locData") :
-                            null
-                        )
-                        imageSequence: (
-                            visible ?
-                            imSel.dataset.get(imSel.currentIndex, "corrAcceptor") :
-                            null
-                        )
                         onPreviewFrameNumberChanged: {
                             imSel.currentFrame = previewFrameNumber
                         }
@@ -209,14 +181,13 @@ ApplicationWindow {
                             editable: false
                             dataset: datasetSel.currentDataset
                             textRole: "key"
-                            imageRole: previewStack.currentItem.imageRole || "corrAcceptor"
+                            imageRole: "corrAcceptor"
                             Layout.fillWidth: true
                         }
                     }
                     Sdt.ImageDisplay {
                         id: imDisp
                         image: imSel.image
-                        overlays: previewStack.currentItem.overlays || []
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                     }
@@ -231,6 +202,110 @@ ApplicationWindow {
                 Layout.fillHeight: true
             }
         }
+
+        states: [
+            State {
+                name: "channelSetup"
+                when: actionTab.currentIndex == 0
+                PropertyChanges {
+                    target: mainStack
+                    currentIndex: 0
+                }
+            },
+            State {
+                name: "datasetSetup"
+                when: actionTab.currentIndex == 1
+                PropertyChanges {
+                    target: mainStack
+                    currentIndex: 1
+                }
+            },
+            State {
+                name: "registrationSetup"
+                when: actionTab.currentIndex == 2
+                PropertyChanges {
+                    target: mainStack
+                    currentIndex: 2
+                }
+            },
+            State {
+                name: "bleedthroughSetup"
+                when: actionTab.currentIndex == 3
+                PropertyChanges {
+                    target: mainStack
+                    currentIndex: 3
+                }
+                PropertyChanges {
+                    target: previewStack
+                    currentIndex: 0
+                }
+                PropertyChanges {
+                    target: imSel
+                    imageRole: bt.imageRole
+                }
+            },
+            State {
+                name: "locate"
+                when: actionTab.currentIndex == 4
+                PropertyChanges {
+                    target: mainStack
+                    currentIndex: 3
+                }
+                PropertyChanges {
+                    target: previewStack
+                    currentIndex: 1
+                }
+                PropertyChanges {
+                    target: imDisp
+                    overlays: loc.overlays
+                }
+            },
+            State {
+                name: "track"
+                when: actionTab.currentIndex == 5
+                PropertyChanges {
+                    target: mainStack
+                    currentIndex: 3
+                }
+                PropertyChanges {
+                    target: previewStack
+                    currentIndex: 2
+                }
+                PropertyChanges {
+                    target: imDisp
+                    overlays: track.overlays
+                }
+            },
+            State {
+                name: "filter"
+                when: actionTab.currentIndex == 6
+                PropertyChanges {
+                    target: mainStack
+                    currentIndex: 3
+                }
+                PropertyChanges {
+                    target: previewStack
+                    currentIndex: 3
+                }
+                PropertyChanges {
+                    target: imDisp
+                    overlays: filter.overlays
+                }
+                PropertyChanges {
+                    target: filter
+                    trackData: imSel.dataset.get(imSel.currentIndex, "locData")
+                    imageSequence: imSel.dataset.get(imSel.currentIndex, "corrAcceptor")
+                }
+            },
+            State {
+                name: "results"
+                when: actionTab.currentIndex == 7
+                PropertyChanges {
+                    target: mainStack
+                    currentIndex: 4
+                }
+            }
+        ]
     }
     Backend {
         id: backend
