@@ -188,7 +188,7 @@ ApplicationWindow {
                         }
                         Connections {
                             target: imSel
-                            onCurrentFrameChanged: {
+                            function onCurrentFrameChanged() {
                                 filter.previewFrameNumber = imSel.currentFrame
                             }
                         }
