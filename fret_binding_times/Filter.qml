@@ -42,6 +42,7 @@ T.Filter {
             showLoc: locPreviewCheck.checked
             showTracks: trackPreviewCheck.checked
             markerSize: 3.0
+            visible: showParamCheck.checked
         },
         Sdt.TrackDisplay {
             trackData: root.currentTrack
@@ -66,7 +67,32 @@ T.Filter {
         id: rootLayout
 
         anchors.fill: parent
+        spacing: 7
 
+        GroupBox {
+            title: "display options"
+            Layout.fillWidth: true
+
+            ColumnLayout {
+                anchors.fill: parent
+
+                Switch {
+                    id: locPreviewCheck
+                    text: "show localizations"
+                    checked: true
+                }
+                Switch {
+                    id: trackPreviewCheck
+                    text: "show tracks"
+                    checked: true
+                }
+                Switch {
+                    id: showParamCheck
+                    text: "show parametrically rejected"
+                    checked: false
+                }
+            }
+        }
         GroupBox {
             title: "parametric filter"
             Layout.fillWidth: true
@@ -120,7 +146,6 @@ T.Filter {
                 }
             }
         }
-        Item { height: 5 }
         GroupBox {
             Layout.fillWidth: true
             title: "manual filter"
@@ -129,18 +154,6 @@ T.Filter {
                 anchors.fill: parent
                 columns: 2
 
-                Switch {
-                    id: locPreviewCheck
-                    text: "show localizations"
-                    checked: true
-                    Layout.columnSpan: 2
-                }
-                Switch {
-                    id: trackPreviewCheck
-                    text: "show tracks"
-                    checked: true
-                    Layout.columnSpan: 2
-                }
                 Switch {
                     id: firstFrameCheck
                     text: "go to first frame"
