@@ -64,7 +64,7 @@ Item {
             id: trackBatchWorker
             anchors.fill: parent
             dataset: root.datasets
-            argRoles: ["locData"]
+            argRoles: ["locData", "corrAcceptor"]
             resultRole: "locData"
         }
 

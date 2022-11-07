@@ -142,15 +142,31 @@ ApplicationWindow {
                         datasets: backend.datasets
                         previewImage: visible ? imSel.image : null
                     }
-                    Tracker {
-                        id: track
-                        datasets: backend.datasets
-                        previewData: (
-                            visible ?
-                            imSel.dataset.get(imSel.currentIndex, "locData") :
-                            null
-                        )
-                        previewFrameNumber: imSel.currentFrame
+                    ColumnLayout {
+                        RowLayout {
+                            Label {
+                                text: "extra pre/post frames"
+                                Layout.fillWidth: true
+                            }
+                            SpinBox {
+                                id: extraBox
+                                from: 0
+                                to: 999
+                            }
+                        }
+                        Tracker {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+
+                            id: track
+                            datasets: backend.datasets
+                            previewData: (
+                                visible ?
+                                imSel.dataset.get(imSel.currentIndex, "locData") :
+                                null
+                            )
+                            previewFrameNumber: imSel.currentFrame
+                        }
                     }
                     Filter {
                         id: filter
@@ -334,7 +350,9 @@ ApplicationWindow {
         onLocAlgorithmChanged: { loc.algorithm = locAlgorithm }
         locOptions: loc.options
         onLocOptionsChanged: { loc.options = locOptions }
-        trackOptions: {"search_range": track.searchRange, "memory": track.memory}
+        trackOptions: {"search_range": track.searchRange,
+                       "memory": track.memory,
+                       "extra_frames": extraBox.value}
         onTrackOptionsChanged: {
             // If setting `track`'s properties directly from trackOptions,
             // there is a problem: setting searchRange updates trackOptions,
@@ -343,6 +361,7 @@ ApplicationWindow {
             var opts = trackOptions
             track.searchRange = opts.search_range
             track.memory = opts.memory
+            extraBox.value = opts.extra_frames
         }
         filterOptions: {"filter_initial": filter.filterInitial,
                         "filter_terminal": filter.filterTerminal,

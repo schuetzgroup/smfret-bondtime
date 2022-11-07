@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import scipy.optimize
 import scipy.ndimage
-from sdt import brightness, gui, helper, io, loc, multicolor
+from sdt import brightness, gui, helper, io, loc, multicolor, spatial
 import trackpy
 
 
@@ -293,16 +293,16 @@ class Backend(QtCore.QObject):
             lc["frame"] = fsel.renumber_frames(
                 lc["frame"].to_numpy(), "d",
                 n_frames=fretImage.orig_frame_count)
-            brightness.from_raw_image(lc, fretImage, radius=3, mask="circle")
             return lc
 
         return locFunc
 
     @QtCore.pyqtSlot(result=QtCore.QVariant)
     def getTrackFunc(self):
-        opts = self.trackOptions
+        opts = self.trackOptions.copy()
+        extra = opts.pop("extra_frames", 0)
 
-        def trackFunc(locData):
+        def trackFunc(locData, fretImage):
             trackpy.quiet()
             if locData.empty:
                 trc = locData.copy()
@@ -310,6 +310,32 @@ class Backend(QtCore.QObject):
                 trc["particle"] = 0
             else:
                 trc = trackpy.link(locData, **opts)
+                trc = spatial.interpolate_coords(trc)
+                if extra > 0:
+                    trc_s = []
+                    for p, t in helper.split_dataframe(trc, "particle",
+                                                       type="DataFrame"):
+                        t.sort_values("frame", ignore_index=True, inplace=True)
+                        t["extra_frame"] = 0
+                        mini = t.loc[0, "frame"]
+                        pre = pd.DataFrame(
+                            {"frame": np.arange(max(0, mini - extra), mini),
+                             "extra_frame": 1, "particle": p, "interp": 1,
+                             "x": t.loc[0, "x"], "y": t.loc[0, "y"]})
+                        i = t.index[-1]
+                        maxi = t.loc[i, "frame"]
+                        post = pd.DataFrame(
+                            {"frame": np.arange(maxi + 1,
+                                                min(maxi + extra + 1,
+                                                    len(fretImage))),
+                             "extra_frame": 2, "particle": p, "interp": 1,
+                             "x": t.loc[i, "x"], "y": t.loc[i, "y"]})
+                        trc_s.append(
+                            pd.concat([pre, t, post], ignore_index=True))
+                    trc = pd.concat(trc_s, ignore_index=True)
+                brightness.from_raw_image(trc, fretImage, radius=3,
+                                          mask="circle")
+
             trc["filter_param"] = -1
             trc["filter_manual"] = -1
             return trc

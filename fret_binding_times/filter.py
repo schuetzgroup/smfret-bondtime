@@ -67,24 +67,31 @@ class Filter(gui.OptionChooser):
             return
         self._currentTrackNo = t
         if self._trackData is None or t < 0:
-            td = None
+            ftd = None
             self._currentTrack = None
             self._currentTrackInfo = self._invalidTrackInfo
         else:
-            td = self._trackData[self._trackData["particle"] == t]
-            if not (len(td)):
+            ftd = self._trackData[self._trackData["particle"] == t
+                                  ].sort_values("frame")
+            if not (len(ftd)):
                 self._currentTrack = None
                 self._currentTrackInfo = self._invalidTrackInfo
             else:
-                self._currentTrack = td
-                f = self._currentTrack["frame"]
+                self._currentTrack = ftd
+                try:
+                    td = ftd[ftd["extra_frame"] == 0]
+                except KeyError:
+                    td = ftd
+                f = td["frame"].to_numpy()
+                start = int(f[0])
+                end = int(f[-1])
                 self._currentTrackInfo = {
-                    "start": int(f.min()), "end": int(f.max()),
+                    "start": start, "end": end,
                     "mass": float(td["mass"].mean()),
                     "bg": float(td["bg"].mean()),
                     "bg_dev": float(td["bg_dev"].mean()), "length": len(td),
                     "status": self._statusMap[td["filter_manual"].iloc[0]]}
-        if td is not None and self.timeTraceFig is not None:
+        if ftd is not None and len(ftd) and self.timeTraceFig is not None:
             fig = self.timeTraceFig.figure
             fig.set_constrained_layout(True)
             try:
@@ -92,7 +99,9 @@ class Filter(gui.OptionChooser):
             except IndexError:
                 ax = fig.add_subplot()
             ax.cla()
-            ax.plot(td["frame"], td["mass"])
+            ax.plot(ftd["frame"], ftd["mass"])
+            ax.axvline(start, color="g")
+            ax.axvline(end, color="r")
             ax.set_xlabel("frame")
             ax.set_ylabel("intensity")
             fig.canvas.draw_idle()
@@ -107,27 +116,33 @@ class Filter(gui.OptionChooser):
             return None, None
         n_frames = len(imageSequence)
         trackData["filter_param"] = 0
+        try:
+            actual_td = trackData[trackData["extra_frame"] == 0]
+        except KeyError:
+            actual_td = trackData
         if filterInitial:
-            bad_p = trackData.loc[trackData["frame"] == 0, "particle"].unique()
+            bad_p = actual_td.loc[actual_td["frame"] == 0, "particle"].unique()
             trackData.loc[trackData["particle"].isin(bad_p),
                           "filter_param"] = 1
         if filterTerminal:
-            bad_p = trackData.loc[trackData["frame"] == n_frames - 1,
+            bad_p = actual_td.loc[actual_td["frame"] == n_frames - 1,
                                   "particle"].unique()
             trackData.loc[trackData["particle"].isin(bad_p),
                           "filter_param"] = 1
         if bgThresh > 0:
-            bad_p = trackData.groupby("particle")["bg"].mean() >= bgThresh
+            # TODO: only use non-interpolated?
+            bad_p = actual_td.groupby("particle")["bg"].mean() >= bgThresh
             bad_p = bad_p.index[bad_p.to_numpy()]
             trackData.loc[trackData["particle"].isin(bad_p),
                           "filter_param"] = 1
         if massThresh > 0:
-            bad_p = trackData.groupby("particle")["mass"].mean() <= massThresh
+            # TODO: only use non-interpolated?
+            bad_p = actual_td.groupby("particle")["mass"].mean() <= massThresh
             bad_p = bad_p.index[bad_p.to_numpy()]
             trackData.loc[trackData["particle"].isin(bad_p),
                           "filter_param"] = 1
         if minLength > 1:
-            bad_p = (trackData.groupby("particle")["frame"].apply(len) <
+            bad_p = (actual_td.groupby("particle")["frame"].apply(len) <
                      minLength)
             bad_p = bad_p.index[bad_p.to_numpy()]
             trackData.loc[trackData["particle"].isin(bad_p),
