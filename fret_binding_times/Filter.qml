@@ -14,35 +14,40 @@ T.Filter {
             trackData: root.manualAccepted
             currentFrame: previewFrameNumber
             color: "Lime"
-            visible: previewCheck.checked
+            showLoc: locPreviewCheck.checked
+            showTracks: trackPreviewCheck.checked
             markerSize: 3.0
         },
         Sdt.TrackDisplay {
             trackData: root.manualUndecided
             currentFrame: previewFrameNumber
             color: "yellow"
-            visible: previewCheck.checked
+            showLoc: locPreviewCheck.checked
+            showTracks: trackPreviewCheck.checked
             markerSize: 3.0
         },
         Sdt.TrackDisplay {
             trackData: root.manualRejected
             currentFrame: previewFrameNumber
             color: "red"
-            visible: previewCheck.checked
+            showLoc: locPreviewCheck.checked
+            showTracks: trackPreviewCheck.checked
             markerSize: 3.0
         },
         Sdt.TrackDisplay {
             trackData: root.paramRejected
             currentFrame: previewFrameNumber
             color: "gray"
-            visible: previewCheck.checked
+            showLoc: locPreviewCheck.checked
+            showTracks: trackPreviewCheck.checked
             markerSize: 3.0
         },
         Sdt.TrackDisplay {
             trackData: root.currentTrack
             currentFrame: previewFrameNumber
             color: "#8080ff"
-            visible: previewCheck.checked
+            showLoc: locPreviewCheck.checked
+            showTracks: trackPreviewCheck.checked
             markerSize: 3.0
         }
     ]
@@ -123,8 +128,14 @@ T.Filter {
                 columns: 2
 
                 Switch {
-                    id: previewCheck
-                    text: "preview"
+                    id: locPreviewCheck
+                    text: "show localizations"
+                    checked: true
+                    Layout.columnSpan: 2
+                }
+                Switch {
+                    id: trackPreviewCheck
+                    text: "show tracks"
                     checked: true
                     Layout.columnSpan: 2
                 }
