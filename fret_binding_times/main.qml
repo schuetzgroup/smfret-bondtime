@@ -155,6 +155,7 @@ ApplicationWindow {
                     Filter {
                         id: filter
                         datasets: backend.datasets
+                        frameCount: imSel.currentFrameCount
                         onPreviewFrameNumberChanged: {
                             imSel.currentFrame = previewFrameNumber
                         }

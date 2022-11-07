@@ -9,6 +9,7 @@ T.Filter {
     id: root
 
     property int previewFrameNumber: -1
+    property int frameCount: 0
     property list<Item> overlays: [
         Sdt.TrackDisplay {
             trackData: root.manualAccepted
@@ -194,6 +195,7 @@ T.Filter {
                         icon.name: "go-previous"
                         autoRepeat: true
                         width: (trackSel.width - frameNavSep.width) / 4
+                        enabled: root.previewFrameNumber > 0
                         onClicked: {
                             root.previewFrameNumber -= 1
                         }
@@ -202,6 +204,7 @@ T.Filter {
                         icon.name: "go-next"
                         autoRepeat: true
                         width: (trackSel.width - frameNavSep.width) / 4
+                        enabled: root.previewFrameNumber < root.frameCount - 1
                         onClicked: {
                             root.previewFrameNumber += 1
                         }
