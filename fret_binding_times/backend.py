@@ -198,7 +198,7 @@ class Backend(QtCore.QObject):
                 "filter_options": self.filterOptions,
                 "fit_options": self.fitOptions}
 
-        ypath = Path(url.toLocalFile())
+        ypath = Path(url.toLocalFile()).with_suffix(".yaml")
         with ypath.open("w") as yf:
             io.yaml.safe_dump(data, yf)
 
@@ -229,8 +229,12 @@ class Backend(QtCore.QObject):
             ypath = Path(url.toLocalFile())
         else:
             ypath = Path(url)
-        with ypath.open() as yf:
-            data = io.yaml.safe_load(yf)
+        try:
+            with ypath.open() as yf:
+                data = io.yaml.safe_load(yf)
+        except FileNotFoundError:
+            return
+
         if "channels" in data:
             self._datasets.channels = data["channels"]
             self._specialDatasets.channels = data["channels"]
