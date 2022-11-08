@@ -367,7 +367,11 @@ class Backend(QtCore.QObject):
             frameCounts = []
             for j in range(ds.rowCount()):
                 df = ds.get(j, "locData")
-                df = df[(df["filter_param"] == 0) & (df["filter_manual"] == 0)]
+                flt = ((df["filter_param"] == 0) &
+                       (df["filter_manual"] == 0))
+                if "extra_frame" in df:
+                    flt &= df["extra_frame"] == 0
+                df = df[flt]
                 fc = df.groupby("particle")["frame"].apply(np.ptp)
                 if not fc.empty:
                     # Exclude empty as they have float dtype, which does not
