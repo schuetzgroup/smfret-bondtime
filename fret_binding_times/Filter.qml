@@ -147,8 +147,50 @@ T.Filter {
             }
         }
         GroupBox {
+            id: manualGroup
+
             Layout.fillWidth: true
             title: "manual filter"
+            focusPolicy: Qt.StrongFocus
+
+            Keys.onPressed: (event) => {
+                switch (event.key) {
+                    case Qt.Key_Left:
+                        prevFrameAction.trigger()
+                        event.accepted = true
+                        break
+                    case Qt.Key_Right:
+                        nextFrameAction.trigger()
+                        event.accepted = true
+                        break
+                    case Qt.Key_Up:
+                        firstFrameAction.trigger()
+                        event.accepted = true
+                        break
+                    case Qt.Key_Down:
+                        lastFrameAction.trigger()
+                        event.accepted = true
+                        break
+                    case Qt.Key_PageUp:
+                        trackSel.increase()
+                        event.accepted = true
+                        break
+                    case Qt.Key_PageDown:
+                        trackSel.decrease()
+                        event.accepted = true
+                        break
+                    case Qt.Key_Return:
+                    case Qt.Key_Enter:
+                        acceptAction.trigger()
+                        event.accepted = true
+                        break
+                    case Qt.Key_Backspace:
+                    case Qt.Key_Delete:
+                        rejectAction.trigger()
+                        event.accepted = true
+                        break
+                }
+            }
 
             GridLayout {
                 anchors.fill: parent
@@ -188,65 +230,39 @@ T.Filter {
                 Label { text: "frame"}
                 Row {
                     ToolButton {
-                        icon.name: "go-first"
+                        action: firstFrameAction
                         width: (trackSel.width - frameNavSep.width) / 4
-                        onClicked: {
-                            root.previewFrameNumber = root.currentTrackInfo.start
-                        }
                     }
                     ToolButton {
-                        icon.name: "go-last"
+                        action: lastFrameAction
                         width: (trackSel.width - frameNavSep.width) / 4
-                        onClicked: {
-                            root.previewFrameNumber = root.currentTrackInfo.end
-                        }
                     }
                     ToolSeparator {
                         id: frameNavSep
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     ToolButton {
-                        icon.name: "go-previous"
-                        autoRepeat: true
+                        action: prevFrameAction
                         width: (trackSel.width - frameNavSep.width) / 4
-                        enabled: root.previewFrameNumber > 0
-                        onClicked: {
-                            root.previewFrameNumber -= 1
-                        }
                     }
                     ToolButton {
-                        icon.name: "go-next"
-                        autoRepeat: true
+                        action: nextFrameAction
                         width: (trackSel.width - frameNavSep.width) / 4
-                        enabled: root.previewFrameNumber < root.frameCount - 1
-                        onClicked: {
-                            root.previewFrameNumber += 1
-                        }
                     }
                 }
                 Label { text: "action" }
                 Row {
                     ToolButton {
-                        icon.name: "dialog-ok-apply"
-                        icon.color: "green"
+                        action: acceptAction
                         width: (trackSel.width - actionSep.width) / 2
-                        onClicked: {
-                            root.acceptTrack(root.currentTrackNo)
-                            trackSel.increase()
-                        }
                     }
                     ToolSeparator {
                         id: actionSep
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     ToolButton {
-                        icon.name: "dialog-cancel"
-                        icon.color: "red"
+                        action: rejectAction
                         width: (trackSel.width - actionSep.width) / 2
-                        onClicked: {
-                            root.rejectTrack(root.currentTrackNo)
-                            trackSel.increase()
-                        }
                     }
                 }
                 Label { text: "intensity" }
@@ -259,9 +275,58 @@ T.Filter {
                 Label { text: root.currentTrackInfo.length }
                 Label { text: "status" }
                 Label { text: root.currentTrackInfo.status }
+                Button {
+                    Layout.columnSpan: 2
+                    Layout.alignment: Qt.AlignCenter
+                    text: "keyboard control " + (checked ? "enabled" : "disabled")
+                    checkable: true
+                    checked: manualGroup.activeFocus
+                    enabled: false
+                }
             }
         }
         Item { Layout.fillHeight: true }
+    }
+
+    Action {
+        id: prevFrameAction
+        icon.name: "go-previous"
+        enabled: root.previewFrameNumber > 0
+        onTriggered: { root.previewFrameNumber -= 1 }
+    }
+    Action {
+        id: nextFrameAction
+        icon.name: "go-next"
+        enabled: root.previewFrameNumber < root.frameCount - 1
+        onTriggered: { root.previewFrameNumber += 1 }
+    }
+    Action {
+        id: firstFrameAction
+        icon.name: "go-first"
+        onTriggered: { root.previewFrameNumber = root.currentTrackInfo.start }
+    }
+    Action {
+        id: lastFrameAction
+        icon.name: "go-last"
+        onTriggered: { root.previewFrameNumber = root.currentTrackInfo.end }
+    }
+    Action {
+        id: acceptAction
+        icon.name: "dialog-ok-apply"
+        icon.color: "green"
+        onTriggered: {
+            root.acceptTrack(root.currentTrackNo)
+            trackSel.increase()
+        }
+    }
+    Action {
+        id: rejectAction
+        icon.name: "dialog-cancel"
+        icon.color: "red"
+        onTriggered: {
+            root.rejectTrack(root.currentTrackNo)
+            trackSel.increase()
+        }
     }
 
     Component.onCompleted: { completeInit() }
