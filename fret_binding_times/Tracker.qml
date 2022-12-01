@@ -13,6 +13,7 @@ Item {
     property Item overlays: Sdt.TrackDisplay {
         trackData: track.trackData
         currentFrame: previewFrameNumber
+        markerSize: 3
     }
     property var previewData: null
     property int previewFrameNumber: -1
