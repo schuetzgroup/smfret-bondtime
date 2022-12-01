@@ -6,7 +6,9 @@ from PyQt5 import QtCore, QtGui, QtQml, QtWidgets
 from sdt import gui
 
 from .backend import Backend, Dataset
+from .changepoints import Changepoints
 from .filter import Filter
+from .track_navigator import TrackNavigator
 
 
 app = QtWidgets.QApplication(sys.argv)
@@ -23,6 +25,10 @@ args = argp.parse_args()
 QtQml.qmlRegisterType(Backend, "BindingTime", 1, 0, "Backend")
 QtQml.qmlRegisterType(Dataset, "BindingTime", 1, 0, "Dataset")
 QtQml.qmlRegisterType(Filter, "BindingTime.Templates", 1, 0, "Filter")
+QtQml.qmlRegisterType(Changepoints, "BindingTime.Templates", 1, 0,
+                      "Changepoints")
+QtQml.qmlRegisterType(TrackNavigator, "BindingTime.Templates", 1, 0,
+                      "TrackNavigator")
 
 gui.mpl_use_qt_font()
 

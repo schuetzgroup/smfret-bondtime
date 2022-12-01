@@ -1,6 +1,6 @@
-import QtQuick 2.12
-import QtQuick.Controls 2.12
-import QtQuick.Layouts 1.12
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 import SdtGui 0.1 as Sdt
 import BindingTime.Templates 1.0 as T
 
@@ -9,7 +9,6 @@ T.Filter {
     id: root
 
     property int previewFrameNumber: -1
-    property int frameCount: 0
     property list<Item> overlays: [
         Sdt.TrackDisplay {
             trackData: root.manualAccepted
@@ -45,7 +44,7 @@ T.Filter {
             visible: showParamCheck.checked
         },
         Sdt.TrackDisplay {
-            trackData: root.currentTrack
+            trackData: root.currentTrackData
             currentFrame: previewFrameNumber
             color: "#8080ff"
             showLoc: locPreviewCheck.checked
@@ -58,10 +57,18 @@ T.Filter {
     property alias massThresh: massThreshSel.value
     property alias bgThresh: bgThreshSel.value
     property alias minLength: minLengthSel.value
+    property alias minChangepoints: minChangepointsSel.value
+    property alias maxChangepoints: maxChangepointsSel.value
     property Item timeTraceFig: null
+    property alias previewFrameNumber: nav.previewFrameNumber
+    property alias currentTrackData: nav.currentTrackData
+    property alias currentTrackInfo: nav.currentTrackInfo
+    property alias imageSequence: nav.imageSequence
 
     implicitWidth: rootLayout.implicitWidth
     implicitHeight: rootLayout.implicitHeight
+
+    onCurrentTrackDataChanged: updatePlot()
 
     ColumnLayout {
         id: rootLayout
@@ -84,7 +91,7 @@ T.Filter {
                 Switch {
                     id: trackPreviewCheck
                     text: "show tracks"
-                    checked: true
+                    checked: false
                 }
                 Switch {
                     id: showParamCheck
@@ -104,13 +111,13 @@ T.Filter {
                 Switch {
                     id: filterInitialCheck
                     text: "remove initially present tracks"
-                    checked: true
+                    checked: false
                     Layout.columnSpan: 2
                 }
                 Switch {
                     id: filterTerminalCheck
                     text: "remove terminally present tracks"
-                    checked: true
+                    checked: false
                     Layout.columnSpan: 2
                 }
                 Label {
@@ -122,6 +129,7 @@ T.Filter {
                     from: 0
                     to: Sdt.Sdt.intMax
                     stepSize: 10
+                    value: 1000
                 }
                 Label {
                     text: "min. intensity"
@@ -144,6 +152,26 @@ T.Filter {
                     to: Sdt.Sdt.intMax
                     value: 2
                 }
+                Label {
+                    text: "min. changepoints"
+                    enabled: root.hasChangepoints
+                }
+                SpinBox {
+                    id: minChangepointsSel
+                    Layout.alignment: Qt.AlignRight
+                    value: 1
+                    enabled: root.hasChangepoints
+                }
+                Label {
+                    text: "max. changepoints"
+                    enabled: root.hasChangepoints
+                }
+                SpinBox {
+                    id: maxChangepointsSel
+                    Layout.alignment: Qt.AlignRight
+                    value: 2
+                    enabled: root.hasChangepoints
+                }
             }
         }
         GroupBox {
@@ -151,182 +179,18 @@ T.Filter {
 
             Layout.fillWidth: true
             title: "manual filter"
-            focusPolicy: Qt.StrongFocus
 
-            Keys.onPressed: (event) => {
-                switch (event.key) {
-                    case Qt.Key_Left:
-                        prevFrameAction.trigger()
-                        event.accepted = true
-                        break
-                    case Qt.Key_Right:
-                        nextFrameAction.trigger()
-                        event.accepted = true
-                        break
-                    case Qt.Key_Up:
-                        firstFrameAction.trigger()
-                        event.accepted = true
-                        break
-                    case Qt.Key_Down:
-                        lastFrameAction.trigger()
-                        event.accepted = true
-                        break
-                    case Qt.Key_PageUp:
-                        trackSel.increase()
-                        event.accepted = true
-                        break
-                    case Qt.Key_PageDown:
-                        trackSel.decrease()
-                        event.accepted = true
-                        break
-                    case Qt.Key_Return:
-                    case Qt.Key_Enter:
-                        acceptAction.trigger()
-                        event.accepted = true
-                        break
-                    case Qt.Key_Backspace:
-                    case Qt.Key_Delete:
-                        rejectAction.trigger()
-                        event.accepted = true
-                        break
-                }
-            }
-
-            GridLayout {
-                anchors.fill: parent
-                columns: 2
-
-                Switch {
-                    id: firstFrameCheck
-                    text: "go to first frame"
-                    checked: true
-                    Layout.columnSpan: 2
-                }
-                Label {
-                    text: "track"
-                    Layout.fillWidth: true
-                }
-                SpinBox {
-                    id: trackSel
-                    contentItem: ComboBox {
-                        editable: true
-                        model: root.trackList
-                        implicitWidth: 100
-                        onCurrentTextChanged: { updateCurrentTrack() }
-                        onModelChanged: { updateCurrentTrack() }
-
-                        function updateCurrentTrack() {
-                            var n = model[currentIndex]
-                            root.currentTrackNo = n == undefined ? -1 : n
-                            parent.value = currentIndex
-                            if (firstFrameCheck.checked)
-                                root.previewFrameNumber = root.currentTrackInfo.start
-                        }
-                    }
-                    padding: 0
-                    to: contentItem.model.length - 1
-                    onValueChanged: { contentItem.currentIndex = value }
-                }
-                Label { text: "frame"}
-                Row {
-                    ToolButton {
-                        action: firstFrameAction
-                        width: (trackSel.width - frameNavSep.width) / 4
-                    }
-                    ToolButton {
-                        action: lastFrameAction
-                        width: (trackSel.width - frameNavSep.width) / 4
-                    }
-                    ToolSeparator {
-                        id: frameNavSep
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    ToolButton {
-                        action: prevFrameAction
-                        width: (trackSel.width - frameNavSep.width) / 4
-                    }
-                    ToolButton {
-                        action: nextFrameAction
-                        width: (trackSel.width - frameNavSep.width) / 4
-                    }
-                }
-                Label { text: "action" }
-                Row {
-                    ToolButton {
-                        action: acceptAction
-                        width: (trackSel.width - actionSep.width) / 2
-                    }
-                    ToolSeparator {
-                        id: actionSep
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    ToolButton {
-                        action: rejectAction
-                        width: (trackSel.width - actionSep.width) / 2
-                    }
-                }
-                Label { text: "intensity" }
-                Label { text: root.currentTrackInfo.mass.toFixed(0) }
-                Label { text: "background" }
-                Label { text: root.currentTrackInfo.bg.toFixed(0) }
-                Label { text: "noise" }
-                Label { text: root.currentTrackInfo.bg_dev.toFixed(0) }
-                Label { text: "length" }
-                Label { text: root.currentTrackInfo.length }
-                Label { text: "status" }
-                Label { text: root.currentTrackInfo.status }
-                Button {
-                    Layout.columnSpan: 2
-                    Layout.alignment: Qt.AlignCenter
-                    text: "keyboard control " + (checked ? "enabled" : "disabled")
-                    checkable: true
-                    checked: manualGroup.activeFocus
-                    enabled: false
-                }
+            TrackNavigator {
+                id: nav
+                cull: true
+                showStatistics: true
+                trackData: root.navigatorData
+                onTrackAccepted: root.acceptTrack(trackNo)
+                onTrackRejected: root.rejectTrack(trackNo)
             }
         }
+        Sdt.StatusDisplay { status: root.status }
         Item { Layout.fillHeight: true }
-    }
-
-    Action {
-        id: prevFrameAction
-        icon.name: "go-previous"
-        enabled: root.previewFrameNumber > 0
-        onTriggered: { root.previewFrameNumber -= 1 }
-    }
-    Action {
-        id: nextFrameAction
-        icon.name: "go-next"
-        enabled: root.previewFrameNumber < root.frameCount - 1
-        onTriggered: { root.previewFrameNumber += 1 }
-    }
-    Action {
-        id: firstFrameAction
-        icon.name: "go-first"
-        onTriggered: { root.previewFrameNumber = root.currentTrackInfo.start }
-    }
-    Action {
-        id: lastFrameAction
-        icon.name: "go-last"
-        onTriggered: { root.previewFrameNumber = root.currentTrackInfo.end }
-    }
-    Action {
-        id: acceptAction
-        icon.name: "dialog-ok-apply"
-        icon.color: "green"
-        onTriggered: {
-            root.acceptTrack(root.currentTrackNo)
-            trackSel.increase()
-        }
-    }
-    Action {
-        id: rejectAction
-        icon.name: "dialog-cancel"
-        icon.color: "red"
-        onTriggered: {
-            root.rejectTrack(root.currentTrackNo)
-            trackSel.increase()
-        }
     }
 
     Component.onCompleted: { completeInit() }

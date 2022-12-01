@@ -10,7 +10,7 @@ import BindingTime 1.0
 ApplicationWindow {
     id: window
     visible: true
-    title: ("FRET lifetime analyzer" +
+    title: ("Bond lifetime analyzer" +
             (backend.saveFile.toString().length ?
              (" – " + Sdt.Sdt.urlToLocalFile(backend.saveFile)) : ""))
 
@@ -57,6 +57,7 @@ ApplicationWindow {
                 TabButton { text: "Bleed-through" }
                 TabButton { text: "Locate" }
                 TabButton { text: "Track" }
+                TabButton { text: "Changepoints" }
                 TabButton { text: "Filter" }
                 TabButton { text: "Results" }
             }
@@ -81,7 +82,7 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     channels: backend.datasets.channels
-                    onChannelsModified: {
+                    onChannelsChanged: {
                         backend.datasets.channels = channels
                         backend.specialDatasets.channels = channels
                     }
@@ -91,14 +92,14 @@ ApplicationWindow {
                 id: dataCollector
                 datasets: backend.datasets
                 specialDatasets: backend.specialDatasets
-                sourceNames: channelConfig.sourceCount
+                sourceNames: channelConfig.sourceNames
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
             Sdt.Registrator {
                 id: reg
                 dataset: backend.registrationDataset
-                channelRoles: Object.keys(dataset.channels)
+                channels: dataset.channels
                 registrator: backend.datasets.registrator
                 onRegistratorChanged: { backend.datasets.registrator = registrator }
                 Layout.fillWidth: true
@@ -168,10 +169,26 @@ ApplicationWindow {
                             previewFrameNumber: imSel.currentFrame
                         }
                     }
+                    Changepoints {
+                        id: changepoints
+
+                        timeTraceFig: timeTraceFig
+                        datasets: backend.datasets
+
+                        onPreviewFrameNumberChanged: {
+                            imSel.currentFrame = previewFrameNumber
+                        }
+
+                        Connections {
+                            target: imSel
+                            function onCurrentFrameChanged() {
+                                changepoints.previewFrameNumber = imSel.currentFrame
+                            }
+                        }
+                    }
                     Filter {
                         id: filter
                         datasets: backend.datasets
-                        frameCount: imSel.currentFrameCount
                         timeTraceFig: timeTraceFig
                         onPreviewFrameNumberChanged: {
                             imSel.currentFrame = previewFrameNumber
@@ -226,7 +243,6 @@ ApplicationWindow {
                     }
                 }
             }
-
             Results {
                 id: results
 
@@ -310,7 +326,7 @@ ApplicationWindow {
                 }
             },
             State {
-                name: "filter"
+                name: "changepoints"
                 when: actionTab.currentIndex == 6
                 PropertyChanges {
                     target: mainStack
@@ -319,6 +335,35 @@ ApplicationWindow {
                 PropertyChanges {
                     target: previewStack
                     currentIndex: 3
+                }
+                PropertyChanges {
+                    target: imDisp
+                    overlays: changepoints.overlays
+                }
+                PropertyChanges {
+                    target: timeTraceFig
+                    visible: true
+                }
+                PropertyChanges {
+                    target: changepoints
+                    trackData: imSel.dataset.get(imSel.currentIndex, "locData")
+                    imageSequence: imSel.dataset.get(imSel.currentIndex, "corrAcceptor")
+                }
+                PropertyChanges {
+                    target: imSel
+                    imageRole: "corrAcceptor"
+                }
+            },
+            State {
+                name: "filter"
+                when: actionTab.currentIndex == 7
+                PropertyChanges {
+                    target: mainStack
+                    currentIndex: 3
+                }
+                PropertyChanges {
+                    target: previewStack
+                    currentIndex: 4
                 }
                 PropertyChanges {
                     target: imDisp
@@ -333,10 +378,14 @@ ApplicationWindow {
                     trackData: imSel.dataset.get(imSel.currentIndex, "locData")
                     imageSequence: imSel.dataset.get(imSel.currentIndex, "corrAcceptor")
                 }
+                PropertyChanges {
+                    target: imSel
+                    imageRole: "corrAcceptor"
+                }
             },
             State {
                 name: "results"
-                when: actionTab.currentIndex == 7
+                when: actionTab.currentIndex == 8
                 PropertyChanges {
                     target: mainStack
                     currentIndex: 4
@@ -375,6 +424,11 @@ ApplicationWindow {
             filter.massThresh = o.mass_thresh
             filter.bgThresh = o.bg_thresh
             filter.minLength = o.min_length != undefined ? o.min_length : 2
+        }
+        changepointOptions: {"penalty": changepoints.penalty}
+        onChangepointOptionsChanged: {
+            var o = changepointOptions
+            changepoints.penalty = o.penalty
         }
         registrationLocOptions: reg.locateSettings
         onRegistrationLocOptionsChanged: { reg.locateSettings = registrationLocOptions }

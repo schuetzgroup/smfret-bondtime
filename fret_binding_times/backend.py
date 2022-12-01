@@ -9,7 +9,8 @@ import numpy as np
 import pandas as pd
 import scipy.optimize
 import scipy.ndimage
-from sdt import brightness, gui, helper, io, loc, multicolor, spatial
+from sdt import (brightness, changepoint, gui, helper, io, loc, multicolor,
+                 spatial)
 import trackpy
 
 
@@ -73,7 +74,7 @@ class Dataset(gui.Dataset):
             return "; ".join(str(self.get(index, r)) for r in self.fileRoles)
         if role in ("donor", "acceptor"):
             chan = self.channels[role]
-            fname = self.get(index, self.fileRoles[chan["source_id"]])
+            fname = self.get(index, chan["source"])
             fname = Path(self.dataDir, fname)
             seq = io.ImageSequence(fname).open()
             # Remember frame count. Necessary to adjust frame numbers after
@@ -89,7 +90,7 @@ class Dataset(gui.Dataset):
                                         cval=self._bleedThrough["background"])
             seq.orig_frame_count = cnt
             return seq
-        if role == "corrAcceptor":
+        if role.startswith("corrAcceptor"):
             d = self.get(index, "donor")
             a = self.get(index, "acceptor")
             bg = self._bleedThrough["background"]
@@ -102,8 +103,11 @@ class Dataset(gui.Dataset):
                     noBg = scipy.ndimage.gaussian_filter(noBg, smt)
                 return acceptor - noBg * bt
 
-            return helper.Pipeline(corr, d, a,
-                                   propagate_attrs={"orig_frame_count"})
+            ret = helper.Pipeline(corr, d, a,
+                                  propagate_attrs={"orig_frame_count"})
+            if role == "corrAcceptorMem":
+                return list(ret)
+            return ret
         return super().get(index, role)
 
     def _imageDataChanged(self):
@@ -120,10 +124,10 @@ class DatasetCollection(gui.DatasetCollection):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.dataRoles = ["key", "donor", "acceptor", "corrAcceptor",
-                          "locData"]
+                          "corrAcceptorMem", "locData"]
         self.DatasetClass = Dataset
-        self._channels = {"acceptor": {"source_id": 0, "roi": None},
-                          "donor": {"source_id": 0, "roi": None}}
+        self._channels = {"acceptor": {"source": "source_0", "roi": None},
+                          "donor": {"source": "source_0", "roi": None}}
         self._excitationSeq = ""
         self._registrator = multicolor.Registrator()
         self._bleedThrough = {"background": 200.0, "factor": 0.0, "smooth": 1.0}
@@ -155,6 +159,7 @@ class Backend(QtCore.QObject):
             self._specialDatasets.append(k)
         self._registrationLocOptions = {}
         self._fitOptions = {}
+        self._changepointOptions = {}
         self._saveFile = QtCore.QUrl()
         self._survivalFuncs = {}
         self._survivalFits = None
@@ -174,6 +179,7 @@ class Backend(QtCore.QObject):
     filterOptions = gui.SimpleQtProperty("QVariantMap")
     registrationLocOptions = gui.SimpleQtProperty("QVariantMap")
     fitOptions = gui.SimpleQtProperty("QVariantMap")
+    changepointOptions = gui.SimpleQtProperty("QVariantMap")
     saveFile = gui.SimpleQtProperty(QtCore.QUrl)
 
     registrationDatasetChanged = QtCore.pyqtSignal()
@@ -196,7 +202,8 @@ class Backend(QtCore.QObject):
                 "registrator": self._datasets.registrator,
                 "bleed_through": self._datasets.bleedThrough,
                 "filter_options": self.filterOptions,
-                "fit_options": self.fitOptions}
+                "fit_options": self.fitOptions,
+                "changepoint_options": self.changepointOptions}
 
         ypath = Path(url.toLocalFile()).with_suffix(".yaml")
         with ypath.open("w") as yf:
@@ -266,6 +273,8 @@ class Backend(QtCore.QObject):
             self.filterOptions = data["filter_options"]
         if "fit_options" in data:
             self.fitOptions = data["fit_options"]
+        if "changepoint_options" in data:
+            self.changepointOptions = data["changepoint_options"]
 
         h5path = ypath.with_suffix(".h5")
         if h5path.exists():
@@ -309,6 +318,8 @@ class Backend(QtCore.QObject):
                 # This adds the "particle" column
                 trc["particle"] = 0
             else:
+                if "extra_frame" in locData:
+                    locData = locData[locData["extra_frame"] == 0]
                 trc = trackpy.link(locData, **opts)
                 trc = spatial.interpolate_coords(trc)
                 if extra > 0:
@@ -330,8 +341,8 @@ class Backend(QtCore.QObject):
                                                     len(fretImage))),
                              "extra_frame": 2, "particle": p, "interp": 1,
                              "x": t.loc[i, "x"], "y": t.loc[i, "y"]})
-                        trc_s.append(
-                            pd.concat([pre, t, post], ignore_index=True))
+                        a = pd.concat([pre, t, post], ignore_index=True)
+                        trc_s.append(a)
                     trc = pd.concat(trc_s, ignore_index=True)
                 brightness.from_raw_image(trc, fretImage, radius=3,
                                           mask="circle")
@@ -341,6 +352,27 @@ class Backend(QtCore.QObject):
             return trc
 
         return trackFunc
+
+    @QtCore.pyqtSlot(result=QtCore.QVariant)
+    def getChangepointFunc(self):
+        opts = self.changepointOptions
+        cp_det = changepoint.Pelt()
+
+        def changepointFunc(trackData):
+            if len(trackData) < 1:
+                return trackData.copy()
+            td = trackData.sort_values(["particle", "frame"])
+            cps = []
+            for p, (idx, mass) in helper.split_dataframe(
+                    td, "particle", ["mass"], type="array_list",
+                    keep_index=True, sort=False):
+                c = cp_det.find_changepoints(mass, **opts)
+                s = changepoint.indices_to_segments(c, len(mass))
+                cps.append(pd.Series(s, index=idx))
+            td["mass_seg"] = pd.concat(cps)
+            return td
+
+        return changepointFunc
 
     @staticmethod
     def survivalModelRates(x, a, k):
@@ -372,7 +404,8 @@ class Backend(QtCore.QObject):
                 if "extra_frame" in df:
                     flt &= df["extra_frame"] == 0
                 df = df[flt]
-                fc = df.groupby("particle")["frame"].apply(np.ptp)
+                fc = df.groupby("particle", group_keys=False
+                                )["frame"].apply(np.ptp)
                 if not fc.empty:
                     # Exclude empty as they have float dtype, which does not
                     # work with np.bincount
