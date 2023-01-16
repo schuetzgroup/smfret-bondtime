@@ -389,7 +389,7 @@ class Backend(QtCore.QObject):
     @QtCore.pyqtSlot(QtCore.QVariant, int, int, bool, result="QVariantMap")
     def getResults(self, figureCanvas, minLength, minCount, fitRates):
         if not self._datasets.rowCount():
-            return [np.NaN, np.NaN]
+            return {}
 
         res = []
         for i in range(self._datasets.rowCount()):
