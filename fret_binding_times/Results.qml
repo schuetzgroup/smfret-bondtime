@@ -84,9 +84,9 @@ Item {
                             text: "<b>k<sub>bleach</sub>:</b> "
                         }
                         Label {
-                            text: (Number(resultValueGroup.results.k_bleach).toLocaleString(Qt.locale(), "f", 2) +
+                            text: (Number(resultValueGroup.results.k_bleach).toLocaleString(Qt.locale(), "f", 3) +
                                    " ± " +
-                                   Number(resultValueGroup.results.k_bleach_err).toLocaleString(Qt.locale(), "f", 3))
+                                   Number(resultValueGroup.results.k_bleach_err).toLocaleString(Qt.locale(), "f", 4))
                         }
                         Label {}
                         Label {
@@ -94,9 +94,9 @@ Item {
                             text: "<b>k<sub>off</sub>:</b> "
                         }
                         Label {
-                            text: (Number(resultValueGroup.results.k_off).toLocaleString(Qt.locale(), "f", 2) +
+                            text: (Number(resultValueGroup.results.k_off).toLocaleString(Qt.locale(), "f", 3) +
                                    " ± " +
-                                   Number(resultValueGroup.results.k_off_err).toLocaleString(Qt.locale(), "f", 3))
+                                   Number(resultValueGroup.results.k_off_err).toLocaleString(Qt.locale(), "f", 4))
                         }
                         Label {
                             textFormat: Text.RichText
