@@ -264,6 +264,13 @@ class Backend(QtCore.QObject):
             t.setdefault("extra_frames", 0)  # sdt-python <= 17.4 YAML file
             self.trackOptions = data["track_options"]
         if "files" in data:
+            for files in data["files"].values():
+                # Replace backslashes by forward slashes
+                # On Windows and sdt-python <= 17.4 paths were saved with
+                # backslashes
+                for entry in files:
+                    for src, f in entry.items():
+                        entry[src] = f.replace("\\", "/")
             self._datasets.fileLists = data["files"]
         if "special_files" in data:
             sf = data["special_files"]
@@ -291,8 +298,17 @@ class Backend(QtCore.QObject):
                     dset = self._datasets.get(i, "dataset")
                     for j in range(dset.rowCount()):
                         dkey = dset.get(j, "key")
-                        with contextlib.suppress(KeyError):
-                            dset.set(j, "locData", s.get(f"/{ekey}/{dkey}"))
+                        # Try with forward and backward slashes
+                        # On Windows and sdt-python <= 17.4 paths were saved
+                        # with backslashes
+                        dkey_bs = dkey.replace("/", "\\")
+                        for k in (f"/{ekey}/{dkey}", f"/{ekey}/{dkey_bs}"):
+                            try:
+                                dset.set(j, "locData", s.get(k))
+                            except KeyError:
+                                pass
+                            else:
+                                break
 
         self.saveFile = QtCore.QUrl.fromLocalFile(str(ypath))
 
