@@ -243,8 +243,13 @@ class Backend(QtCore.QObject):
             return
 
         if "channels" in data:
-            self._datasets.channels = data["channels"]
-            self._specialDatasets.channels = data["channels"]
+            ch = data["channels"]
+            for v in ch.values():
+                if "source" not in v:
+                    # sdt-python <= 17.4 YAML file
+                    v["source"] = f"source_{v.pop('source_id')}"
+            self._datasets.channels = ch
+            self._specialDatasets.channels = ch
         if "data_dir" in data:
             self._datasets.dataDir = data["data_dir"]
             self._specialDatasets.dataDir = data["data_dir"]
@@ -255,6 +260,8 @@ class Backend(QtCore.QObject):
         if "loc_options" in data:
             self.locOptions = data["loc_options"]
         if "track_options" in data:
+            t = data["track_options"]
+            t.setdefault("extra_frames", 0)  # sdt-python <= 17.4 YAML file
             self.trackOptions = data["track_options"]
         if "files" in data:
             self._datasets.fileLists = data["files"]
