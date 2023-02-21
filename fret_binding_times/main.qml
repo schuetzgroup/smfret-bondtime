@@ -416,7 +416,11 @@ ApplicationWindow {
                         "filter_terminal": filter.filterTerminal,
                         "mass_thresh": filter.massThresh,
                         "bg_thresh": filter.bgThresh,
-                        "min_length": filter.minLength}
+                        "min_length": filter.minLength,
+                        "min_changepoints": filter.minChangepoints,
+                        "max_changepoints": filter.maxChangepoints,
+                        "start_end_changepoints": filter.startEndChangepoints
+        }
         onFilterOptionsChanged: {
             var o = filterOptions
             filter.filterInitial = o.filter_initial
@@ -424,6 +428,12 @@ ApplicationWindow {
             filter.massThresh = o.mass_thresh
             filter.bgThresh = o.bg_thresh
             filter.minLength = o.min_length != undefined ? o.min_length : 2
+            filter.minChangepoints = (o.min_changepoints != undefined ?
+                                      o.min_changepoints : 1)
+            filter.maxChangepoints = (o.max_changepoints != undefined ?
+                                      o.max_changepoints : 2)
+            filter.startEndChangepoints = (o.start_end_changepoints != undefined ?
+                                           o.start_end_changepoints : true)
         }
         changepointOptions: {"penalty": changepoints.penalty}
         onChangepointOptionsChanged: {

@@ -59,6 +59,7 @@ T.Filter {
     property alias minLength: minLengthSel.value
     property alias minChangepoints: minChangepointsSel.value
     property alias maxChangepoints: maxChangepointsSel.value
+    property alias startEndChangepoints: startEndChangepointsCheck.checked
     property Item timeTraceFig: null
     property alias previewFrameNumber: nav.previewFrameNumber
     property alias currentTrackData: nav.currentTrackData
@@ -170,6 +171,13 @@ T.Filter {
                     id: maxChangepointsSel
                     Layout.alignment: Qt.AlignRight
                     value: 2
+                    enabled: root.hasChangepoints
+                }
+                Switch {
+                    id: startEndChangepointsCheck
+                    text: "start/end count as changepoints"
+                    checked: true
+                    Layout.columnSpan: 2
                     enabled: root.hasChangepoints
                 }
             }

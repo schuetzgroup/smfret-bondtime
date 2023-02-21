@@ -19,7 +19,8 @@ class Filter(gui.OptionChooser):
         super().__init__(
             argProperties=["trackData", "imageSequence", "filterInitial",
                            "filterTerminal", "bgThresh", "massThresh",
-                           "minLength", "minChangepoints", "maxChangepoints"],
+                           "minLength", "minChangepoints", "maxChangepoints",
+                           "startEndChangepoints"],
             resultProperties=["paramAccepted", "paramRejected"],
             parent=parent)
         self._datasets = None
@@ -52,6 +53,7 @@ class Filter(gui.OptionChooser):
     timeTraceFig = gui.QmlDefinedProperty()
     minChangepoints = gui.QmlDefinedProperty()
     maxChangepoints = gui.QmlDefinedProperty()
+    startEndChangepoints = gui.QmlDefinedProperty()
 
     trackDataChanged = QtCore.pyqtSignal()
 
@@ -105,7 +107,7 @@ class Filter(gui.OptionChooser):
     @staticmethod
     def workerFunc(trackData, imageSequence, filterInitial, filterTerminal,
                    bgThresh, massThresh, minLength, minChangepoints,
-                   maxChangepoints):
+                   maxChangepoints, startEndChangepoints):
         if trackData is None or imageSequence is None:
             return None, None
         n_frames = len(imageSequence)
@@ -144,6 +146,15 @@ class Filter(gui.OptionChooser):
         if "mass_seg" in trackData:
             cp_count = trackData.groupby("particle")["mass_seg"].apply(
                 lambda x: len(x.unique())) - 1
+
+            if startEndChangepoints:
+                presentAtStart = actual_td.loc[
+                    actual_td["frame"] == 0, "particle"].unique()
+                presentAtEnd = actual_td.loc[
+                    actual_td["frame"] == n_frames - 1, "particle"].unique()
+                cp_count[cp_count.index.isin(presentAtStart)] += 1
+                cp_count[cp_count.index.isin(presentAtEnd)] += 1
+
             bad_p = (cp_count < minChangepoints) | (cp_count > maxChangepoints)
             bad_p = bad_p.index[bad_p.to_numpy()]
             trackData.loc[trackData["particle"].isin(bad_p),
@@ -187,5 +198,7 @@ class Filter(gui.OptionChooser):
             filterInitial=self.filterInitial,
             filterTerminal=self.filterTerminal,
             massThresh=self.massThresh, bgThresh=self.bgThresh,
-            minLength=self.minLength)
+            minLength=self.minLength, minChangepoints=self.minChangepoints,
+            maxChangepoints=self.maxChangepoints,
+            startEndChangepoints=self.startEndChangepoints)
 
