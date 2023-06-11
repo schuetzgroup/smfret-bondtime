@@ -66,6 +66,8 @@ T.Filter {
     property alias currentTrackInfo: nav.currentTrackInfo
     property alias imageSequence: nav.imageSequence
 
+    showOnlyUndecided: showOnlyUndecidedCheck.checked  // private property
+
     implicitWidth: rootLayout.implicitWidth
     implicitHeight: rootLayout.implicitHeight
 
@@ -98,6 +100,11 @@ T.Filter {
                     id: showParamCheck
                     text: "show parametrically rejected"
                     checked: false
+                }
+                Switch {
+                    id: showOnlyUndecidedCheck
+                    text: "show only undecided"
+                    checked: root.showOnlyUndecided
                 }
             }
         }
