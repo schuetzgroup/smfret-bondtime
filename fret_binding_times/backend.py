@@ -329,6 +329,31 @@ class Backend(QtCore.QObject):
 
         return locFunc
 
+    def trackExtraFrames(self, trc, nExtra, nFrames):
+        if nExtra <= 0:
+            trc["extra_frame"] = 0
+            return trc
+        trc_s = []
+        for p, t in helper.split_dataframe(trc, "particle", type="DataFrame"):
+            t.sort_values("frame", ignore_index=True, inplace=True)
+            t["extra_frame"] = 0
+            mini = t.loc[0, "frame"]
+            pre = pd.DataFrame(
+                {"frame": np.arange(max(0, mini - nExtra), mini),
+                 "extra_frame": 1, "particle": p, "interp": 1,
+                 "x": t.loc[0, "x"], "y": t.loc[0, "y"]})
+            i = t.index[-1]
+            maxi = t.loc[i, "frame"]
+            post = pd.DataFrame(
+                {"frame": np.arange(maxi + 1,
+                                    min(maxi + nExtra + 1, nFrames)),
+                 "extra_frame": 2, "particle": p, "interp": 1,
+                 "x": t.loc[i, "x"], "y": t.loc[i, "y"]})
+            a = pd.concat([pre, t, post], ignore_index=True)
+            trc_s.append(a)
+        return pd.concat(trc_s, ignore_index=True)
+
+
     @QtCore.pyqtSlot(result=QtCore.QVariant)
     def getTrackFunc(self):
         opts = self.trackOptions.copy()
@@ -345,28 +370,7 @@ class Backend(QtCore.QObject):
                     locData = locData[locData["extra_frame"] == 0]
                 trc = trackpy.link(locData, **opts)
                 trc = spatial.interpolate_coords(trc)
-                if extra > 0:
-                    trc_s = []
-                    for p, t in helper.split_dataframe(trc, "particle",
-                                                       type="DataFrame"):
-                        t.sort_values("frame", ignore_index=True, inplace=True)
-                        t["extra_frame"] = 0
-                        mini = t.loc[0, "frame"]
-                        pre = pd.DataFrame(
-                            {"frame": np.arange(max(0, mini - extra), mini),
-                             "extra_frame": 1, "particle": p, "interp": 1,
-                             "x": t.loc[0, "x"], "y": t.loc[0, "y"]})
-                        i = t.index[-1]
-                        maxi = t.loc[i, "frame"]
-                        post = pd.DataFrame(
-                            {"frame": np.arange(maxi + 1,
-                                                min(maxi + extra + 1,
-                                                    len(fretImage))),
-                             "extra_frame": 2, "particle": p, "interp": 1,
-                             "x": t.loc[i, "x"], "y": t.loc[i, "y"]})
-                        a = pd.concat([pre, t, post], ignore_index=True)
-                        trc_s.append(a)
-                    trc = pd.concat(trc_s, ignore_index=True)
+                trc = self.trackExtraFrames(trc, extra, len(fretImage))
                 brightness.from_raw_image(trc, fretImage, radius=3,
                                           mask="circle")
 
