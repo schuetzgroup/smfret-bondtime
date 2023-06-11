@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 
 from PyQt5 import QtCore, QtGui, QtQml, QtWidgets
+import matplotlib as mpl
 from sdt import gui
 
 from .backend import Backend, Dataset
@@ -10,6 +11,7 @@ from .changepoints import Changepoints
 from .filter import Filter
 from .track_navigator import TrackNavigator
 
+mpl.rcParams["axes.unicode_minus"] = False
 
 app = QtWidgets.QApplication(sys.argv)
 app.setOrganizationName("schuetzgroup")
