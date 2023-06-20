@@ -6,9 +6,10 @@ from PyQt5 import QtCore, QtGui, QtQml, QtWidgets
 import matplotlib as mpl
 from sdt import gui
 
-from .backend import Backend, Dataset
+from .backend import Backend
 from .changepoints import Changepoints
 from .filter import Filter
+from .image_pipeline import LifetimeImagePipeline
 from .track_navigator import TrackNavigator
 
 mpl.rcParams["axes.unicode_minus"] = False
@@ -25,7 +26,8 @@ argp.add_argument("save", help="Save file", nargs="?", type=Path)
 args = argp.parse_args()
 
 QtQml.qmlRegisterType(Backend, "BindingTime", 1, 0, "Backend")
-QtQml.qmlRegisterType(Dataset, "BindingTime", 1, 0, "Dataset")
+QtQml.qmlRegisterType(LifetimeImagePipeline, "BindingTime", 1, 0,
+                      "LifetimeImagePipeline")
 QtQml.qmlRegisterType(Filter, "BindingTime.Templates", 1, 0, "Filter")
 QtQml.qmlRegisterType(Changepoints, "BindingTime.Templates", 1, 0,
                       "Changepoints")
@@ -35,6 +37,7 @@ QtQml.qmlRegisterType(TrackNavigator, "BindingTime.Templates", 1, 0,
 gui.mpl_use_qt_font()
 
 comp = gui.Component(Path(__file__).parent / "main.qml")
+comp.create()
 if comp.status_ == gui.Component.Status.Error:
         sys.exit(1)
 if args.save is not None:

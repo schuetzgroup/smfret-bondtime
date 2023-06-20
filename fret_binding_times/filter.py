@@ -17,7 +17,7 @@ class Filter(gui.OptionChooser):
 
     def __init__(self, parent):
         super().__init__(
-            argProperties=["trackData", "imageSequence", "filterInitial",
+            argProperties=["trackData", "frameCount", "filterInitial",
                            "filterTerminal", "bgThresh", "massThresh",
                            "minLength", "minChangepoints", "maxChangepoints",
                            "startEndChangepoints"],
@@ -41,7 +41,7 @@ class Filter(gui.OptionChooser):
     trackData = gui.SimpleQtProperty(QtCore.QVariant, comp=operator.is_)
     currentTrackData = gui.QmlDefinedProperty()
     currentTrackInfo = gui.QmlDefinedProperty()
-    imageSequence = gui.QmlDefinedProperty()
+    frameCount = gui.QmlDefinedProperty()
     paramAccepted = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
     paramRejected = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
     manualAccepted = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
@@ -110,12 +110,12 @@ class Filter(gui.OptionChooser):
         fig.canvas.draw_idle()
 
     @staticmethod
-    def workerFunc(trackData, imageSequence, filterInitial, filterTerminal,
+    def workerFunc(trackData, frameCount, filterInitial, filterTerminal,
                    bgThresh, massThresh, minLength, minChangepoints,
                    maxChangepoints, startEndChangepoints):
-        if trackData is None or imageSequence is None:
+        if trackData is None or frameCount < 1:
             return None, None
-        n_frames = len(imageSequence)
+        n_frames = frameCount
         trackData["filter_param"] = 0
         try:
             actual_td = trackData[trackData["extra_frame"] == 0]

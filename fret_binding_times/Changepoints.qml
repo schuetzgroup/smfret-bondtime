@@ -1,7 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import SdtGui 0.1 as Sdt
+import SdtGui 0.2 as Sdt
 import BindingTime.Templates 1.0 as T
 
 
@@ -28,10 +28,10 @@ T.Changepoints {
     ]
     property alias penalty: penaltyBox.value
     property alias previewFrameNumber: nav.previewFrameNumber
+    property alias frameCount: nav.frameCount
     property alias trackData: nav.trackData
     property alias currentTrackData: nav.currentTrackData
     property alias currentTrackInfo: nav.currentTrackInfo
-    property alias imageSequence: nav.imageSequence
     property Item timeTraceFig: null
 
     implicitWidth: rootLayout.implicitWidth

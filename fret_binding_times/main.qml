@@ -3,7 +3,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Dialogs 1.3 as QQDialogs
 import QtQuick.Layouts 1.15
 import Qt.labs.settings 1.0
-import SdtGui 0.1 as Sdt
+import SdtGui 0.2 as Sdt
 import BindingTime 1.0
 
 
@@ -59,7 +59,6 @@ ApplicationWindow {
                 TabButton { text: "Track" }
                 TabButton { text: "Changepoints" }
                 TabButton { text: "Filter" }
-                TabButton { text: "Results" }
             }
         }
 
@@ -70,9 +69,9 @@ ApplicationWindow {
                 Sdt.FrameSelector {
                     id: frameSel
                     showTypeSelector: false
-                    excitationSeq: backend.datasets.excitationSeq
+                    excitationSeq: imagePipe.excitationSeq
                     onExcitationSeqChanged: {
-                        backend.datasets.excitationSeq = excitationSeq
+                        imagePipe.excitationSeq = excitationSeq
                     }
                     Layout.fillWidth: true
                 }
@@ -81,27 +80,35 @@ ApplicationWindow {
                     id: channelConfig
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    channels: backend.datasets.channels
+                    channels: imagePipe.channels
                     onChannelsChanged: {
-                        backend.datasets.channels = channels
-                        backend.specialDatasets.channels = channels
+                        imagePipe.channels = channels
                     }
                 }
             }
-            Sdt.MultiDataCollector {
-                id: dataCollector
-                datasets: backend.datasets
-                specialDatasets: backend.specialDatasets
-                sourceNames: channelConfig.sourceNames
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+            ColumnLayout {
+                Sdt.DirSelector {
+                    id: dataDirSel
+                    label: "Data folder:"
+                    dataDir: backend.dataDir
+                    onDataDirChanged: { backend.dataDir = dataDir }
+                    Layout.fillWidth: true
+                }
+                Sdt.MultiDataCollector {
+                    id: dataCollector
+                    datasets: backend.datasets
+                    sourceNames: channelConfig.sourceNames
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    dataDir: backend.dataDir
+                }
             }
             Sdt.Registrator {
                 id: reg
                 dataset: backend.registrationDataset
-                channels: dataset.channels
-                registrator: backend.datasets.registrator
-                onRegistratorChanged: { backend.datasets.registrator = registrator }
+                channels: imagePipe.channels
+                registrator: imagePipe.registrator
+                onRegistratorChanged: { imagePipe.registrator = registrator }
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
@@ -119,23 +126,23 @@ ApplicationWindow {
 
                     BleedThrough {
                         id: bt
-                        background: backend.datasets.bleedThrough.background
+                        background: imagePipe.bleedThrough.background
                         onBackgroundChanged: {
-                            var bt = backend.datasets.bleedThrough
+                            var bt = imagePipe.bleedThrough
                             bt.background = background
-                            backend.datasets.bleedThrough = bt
+                            imagePipe.bleedThrough = bt
                         }
-                        factor: backend.datasets.bleedThrough.factor
+                        factor: imagePipe.bleedThrough.factor
                         onFactorChanged: {
-                            var bt = backend.datasets.bleedThrough
+                            var bt = imagePipe.bleedThrough
                             bt.factor = factor
-                            backend.datasets.bleedThrough = bt
+                            imagePipe.bleedThrough = bt
                         }
-                        smooth: backend.datasets.bleedThrough.smooth
+                        smooth: imagePipe.bleedThrough.smooth
                         onSmoothChanged: {
-                            var bt = backend.datasets.bleedThrough
+                            var bt = imagePipe.bleedThrough
                             bt.smooth = smooth
-                            backend.datasets.bleedThrough = bt
+                            imagePipe.bleedThrough = bt
                         }
                     }
                     Locator {
@@ -168,6 +175,10 @@ ApplicationWindow {
                             )
                             previewFrameNumber: imSel.currentFrame
                         }
+                        /*Button {
+                            Layout.fillWidth: true
+                            text: "Add extra frames…"
+                        }*/
                     }
                     Changepoints {
                         id: changepoints
@@ -184,6 +195,9 @@ ApplicationWindow {
                             function onCurrentFrameChanged() {
                                 changepoints.previewFrameNumber = imSel.currentFrame
                             }
+                            function onCurrentFrameCountChanged() {
+                                changepoints.frameCount = imSel.currentFrameCount
+                            }
                         }
                     }
                     Filter {
@@ -198,6 +212,9 @@ ApplicationWindow {
                             target: imSel
                             function onCurrentFrameChanged() {
                                 filter.previewFrameNumber = imSel.currentFrame
+                            }
+                            function onCurrentFrameCountChanged() {
+                                filter.frameCount = imSel.currentFrameCount
                             }
                         }
                     }
@@ -224,14 +241,16 @@ ApplicationWindow {
                                 id: imSel
                                 editable: false
                                 dataset: datasetSel.currentDataset
-                                textRole: "key"
-                                imageRole: "corrAcceptor"
+                                // textRole: "key"
+                                currentChannel: "corrAcceptor"
                                 Layout.fillWidth: true
+                                imagePipeline: imagePipe
                             }
                         }
                         Sdt.ImageDisplay {
                             id: imDisp
                             image: imSel.image
+                            error: imSel.error
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                         }
@@ -242,13 +261,6 @@ ApplicationWindow {
                         visible: false
                     }
                 }
-            }
-            Results {
-                id: results
-
-                minLength: filter.minLength
-                Layout.fillWidth: true
-                Layout.fillHeight: true
             }
         }
 
@@ -290,7 +302,7 @@ ApplicationWindow {
                 }
                 PropertyChanges {
                     target: imSel
-                    imageRole: bt.imageRole
+                    currentChannel: bt.imageRole
                 }
             },
             State {
@@ -347,11 +359,10 @@ ApplicationWindow {
                 PropertyChanges {
                     target: changepoints
                     trackData: imSel.dataset.get(imSel.currentIndex, "locData")
-                    imageSequence: imSel.dataset.get(imSel.currentIndex, "corrAcceptor")
                 }
                 PropertyChanges {
                     target: imSel
-                    imageRole: "corrAcceptor"
+                    currentChannel: "corrAcceptor"
                 }
             },
             State {
@@ -376,25 +387,18 @@ ApplicationWindow {
                 PropertyChanges {
                     target: filter
                     trackData: imSel.dataset.get(imSel.currentIndex, "locData")
-                    imageSequence: imSel.dataset.get(imSel.currentIndex, "corrAcceptor")
+                    currentFrameCount: imSel.currentFrameCount
                 }
                 PropertyChanges {
                     target: imSel
-                    imageRole: "corrAcceptor"
-                }
-            },
-            State {
-                name: "results"
-                when: actionTab.currentIndex == 8
-                PropertyChanges {
-                    target: mainStack
-                    currentIndex: 4
+                    currentChannel: "corrAcceptor"
                 }
             }
         ]
     }
     Backend {
         id: backend
+        imagePipeline: imagePipe
         locAlgorithm: loc.algorithm
         onLocAlgorithmChanged: { loc.algorithm = locAlgorithm }
         locOptions: loc.options
@@ -412,14 +416,15 @@ ApplicationWindow {
             track.memory = opts.memory
             extraBox.value = opts.extra_frames
         }
-        filterOptions: {"filter_initial": filter.filterInitial,
-                        "filter_terminal": filter.filterTerminal,
-                        "mass_thresh": filter.massThresh,
-                        "bg_thresh": filter.bgThresh,
-                        "min_length": filter.minLength,
-                        "min_changepoints": filter.minChangepoints,
-                        "max_changepoints": filter.maxChangepoints,
-                        "start_end_changepoints": filter.startEndChangepoints
+        filterOptions: {
+            "filter_initial": filter.filterInitial,
+            "filter_terminal": filter.filterTerminal,
+            "mass_thresh": filter.massThresh,
+            "bg_thresh": filter.bgThresh,
+            "min_length": filter.minLength,
+            "min_changepoints": filter.minChangepoints,
+            "max_changepoints": filter.maxChangepoints,
+            "start_end_changepoints": filter.startEndChangepoints
         }
         onFilterOptionsChanged: {
             var o = filterOptions
@@ -442,13 +447,9 @@ ApplicationWindow {
         }
         registrationLocOptions: reg.locateSettings
         onRegistrationLocOptionsChanged: { reg.locateSettings = registrationLocOptions }
-        fitOptions: {"fit_variable": results.fitVariable,
-                     "min_count": results.minCount}
-        onFitOptionsChanged: {
-            var o = fitOptions
-            results.fitVariable = o.fit_variable
-            results.minCount = o.min_count
-        }
+    }
+    LifetimeImagePipeline {
+        id: imagePipe
     }
     Settings {
         id: settings

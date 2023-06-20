@@ -13,7 +13,6 @@ class TrackNavigator(QtQuick.QQuickItem):
         super().__init__(parent)
         self._trcList = []
         self._trackData = None
-        self._imageSequence = None
         self._currentTrackNo = -1
         self._currentTrackData = None
         self._currentTrackInfo = self._invalidTrackInfo
@@ -48,28 +47,6 @@ class TrackNavigator(QtQuick.QQuickItem):
     @QtCore.pyqtProperty(list, notify=_trackNoListChanged)
     def _trackNoList(self):
         return self._trcList
-
-    imageSequenceChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty(QtCore.QVariant)
-    def imageSequence(self):
-        return self._imageSequence
-
-    @imageSequence.setter
-    def imageSequence(self, s):
-        if self._imageSequence is s:
-            return
-        oldCount = self._frameCount
-        self._imageSequence = s
-        self.imageSequenceChanged.emit()
-        if oldCount != self._frameCount:
-            self._frameCountChanged.emit()
-
-    _frameCountChanged = QtCore.pyqtSignal()
-
-    @QtCore.pyqtProperty(int, notify=_frameCountChanged)
-    def _frameCount(self):
-        return 0 if self._imageSequence is None else len(self._imageSequence)
 
     currentTrackNoChanged = QtCore.pyqtSignal()
 

@@ -1,7 +1,7 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.12
 import QtQuick.Layouts 1.12
-import SdtGui 0.1 as Sdt
+import SdtGui 0.2 as Sdt
 
 
 Item {
@@ -65,7 +65,7 @@ Item {
             id: trackBatchWorker
             anchors.fill: parent
             dataset: root.datasets
-            argRoles: ["locData", "corrAcceptor"]
+            argRoles: ["locData", ...root.datasets.fileRoles]
             resultRole: "locData"
         }
 

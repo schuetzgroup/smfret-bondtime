@@ -1,7 +1,7 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.12
 import QtQuick.Layouts 1.12
-import SdtGui 0.1 as Sdt
+import SdtGui 0.2 as Sdt
 
 
 Item {
@@ -57,9 +57,9 @@ Item {
             id: batchWorker
             anchors.fill: parent
             dataset: root.datasets
-            argRoles: ["corrAcceptor"]
+            argRoles: root.datasets.fileRoles
             resultRole: "locData"
-            displayRole: "source_0"
+            displayRole: root.datasets.fileRoles[0]
             errorPolicy: Sdt.BatchWorker.ErrorPolicy.Abort
         }
 

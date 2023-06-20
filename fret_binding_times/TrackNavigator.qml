@@ -1,7 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import SdtGui 0.1 as Sdt
+import SdtGui 0.2 as Sdt
 import BindingTime.Templates 1.0 as T
 
 
@@ -9,6 +9,7 @@ T.TrackNavigator {
     id: root
 
     property int previewFrameNumber: -1
+    property int frameCount: 0
     property bool showStatistics: false
     property bool cull: false
 
@@ -189,7 +190,7 @@ T.TrackNavigator {
     Action {
         id: nextFrameAction
         icon.name: "go-next"
-        enabled: root.previewFrameNumber < root._frameCount - 1
+        enabled: root.previewFrameNumber < root.frameCount - 1
         onTriggered: { root.previewFrameNumber += 1 }
     }
     Action {
