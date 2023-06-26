@@ -200,21 +200,23 @@ ApplicationWindow {
                             }
                         }
                     }
-                    Filter {
-                        id: filter
-                        datasets: backend.datasets
-                        timeTraceFig: timeTraceFig
-                        onPreviewFrameNumberChanged: {
-                            imSel.currentFrame = previewFrameNumber
-                        }
-
-                        Connections {
-                            target: imSel
-                            function onCurrentFrameChanged() {
-                                filter.previewFrameNumber = imSel.currentFrame
+                    ScrollView {
+                        Filter {
+                            id: filter
+                            datasets: backend.datasets
+                            timeTraceFig: timeTraceFig
+                            onPreviewFrameNumberChanged: {
+                                imSel.currentFrame = previewFrameNumber
                             }
-                            function onCurrentFrameCountChanged() {
-                                filter.frameCount = imSel.currentFrameCount
+
+                            Connections {
+                                target: imSel
+                                function onCurrentFrameChanged() {
+                                    filter.previewFrameNumber = imSel.currentFrame
+                                }
+                                function onCurrentFrameCountChanged() {
+                                    filter.frameCount = imSel.currentFrameCount
+                                }
                             }
                         }
                     }
