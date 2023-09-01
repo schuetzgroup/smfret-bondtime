@@ -66,7 +66,7 @@ T.Filter {
     property alias currentTrackData: nav.currentTrackData
     property alias currentTrackInfo: nav.currentTrackInfo
 
-    showOnlyUndecided: showOnlyUndecidedCheck.checked  // private property
+    showManual: showManualSel.currentIndex  // private property
 
     implicitWidth: rootLayout.implicitWidth
     implicitHeight: rootLayout.implicitHeight
@@ -101,10 +101,12 @@ T.Filter {
                     text: "show parametrically rejected"
                     checked: false
                 }
-                Switch {
-                    id: showOnlyUndecidedCheck
-                    text: "show only undecided"
-                    checked: root.showOnlyUndecided
+                RowLayout {
+                    Label { text: "manually filtered" }
+                    ComboBox {
+                        id: showManualSel
+                        model: ["all", "undecided", "accepted", "rejected"]
+                    }
                 }
             }
         }

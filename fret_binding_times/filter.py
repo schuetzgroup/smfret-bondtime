@@ -32,10 +32,10 @@ class Filter(gui.OptionChooser):
         self._manualUndecided = None
         self._navigatorData = None
 
-        self._showOnlyUndecided = False
+        self._showManual = 0
 
         self.paramAcceptedChanged.connect(self._updateManualTracks)
-        self.showOnlyUndecidedChanged.connect(self._updateManualTracks)
+        self.showManualChanged.connect(self._updateManualTracks)
 
     datasets = gui.SimpleQtProperty(QtCore.QVariant)
     trackData = gui.SimpleQtProperty(QtCore.QVariant, comp=operator.is_)
@@ -58,7 +58,7 @@ class Filter(gui.OptionChooser):
     maxChangepoints = gui.QmlDefinedProperty()
     startEndChangepoints = gui.QmlDefinedProperty()
 
-    showOnlyUndecided = gui.SimpleQtProperty(bool)
+    showManual = gui.SimpleQtProperty(int)
 
     trackDataChanged = QtCore.pyqtSignal()
 
@@ -187,10 +187,18 @@ class Filter(gui.OptionChooser):
             self._manualUndecided = None
         else:
             fp = self._trackData[self._trackData["filter_param"] == 0]
-            if self._showOnlyUndecided:
+            if self._showManual == 1:  # show only undecided
                 self._navigatorData = self._manualUndecided = \
                     fp[fp["filter_manual"] == -1]
                 self._manualAccepted = self._manualRejected = fp.iloc[:0]
+            elif self._showManual == 2:  # show only accepted
+                self._navigatorData = self._manualAccepted = \
+                    fp[fp["filter_manual"] == 0]
+                self._manualUndecided = self._manualRejected = fp.iloc[:0]
+            elif self._showManual == 3:  # show only rejected
+                self._navigatorData = self._manualRejected = \
+                    fp[fp["filter_manual"] == 1]
+                self._manualUndecided = self._manualAccepted = fp.iloc[:0]
             else:
                 self._navigatorData = fp
                 self._manualAccepted = fp[fp["filter_manual"] == 0]
