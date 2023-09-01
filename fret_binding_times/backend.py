@@ -173,8 +173,14 @@ class Backend(QtCore.QObject):
             self.changepointOptions = data["changepoint_options"]
 
         dd = Path(self.dataDir)
-        if "files" in data:
-            for files in data["files"].values():
+        # older YAML files store special dataset files under "special_files"
+        all_files = {**data.get("special_files", {}), **data.get("files", {})}
+        if all_files:
+            for interval, files in all_files.items():
+                if isinstance(files, list):
+                    # older YAML files store list of file names
+                    all_files[interval] = {n: f for n, f in enumerate(files)}
+            for files in all_files.values():
                 for entry in files.values():
                     for src, f in entry.items():
                         # Replace backslashes by forward slashes
@@ -182,18 +188,12 @@ class Backend(QtCore.QObject):
                         # with backslashes
                         f = f.replace("\\", "/")
                         entry[src] = (dd / f).as_posix()
-            self._datasets.fileLists = data["files"]
+            self._datasets.fileLists = all_files
             for i in range(self._datasets.count):
                 self._datasets.set(
                     i, "special",
                     self._datasets.get(i, "key") in self._specialKeys)
             self.registrationDatasetChanged.emit()
-        # if "special_files" in data:
-        #     sf = data["special_files"]
-        #     self._specialDatasets.fileLists = {
-        #         k: sf.get(k, []) for k in self._specialKeys}
-        #     self.registrationDatasetChanged.emit()
-        #
         h5path = ypath.with_suffix(".h5")
         if h5path.exists():
             with pd.HDFStore(h5path, "r") as s:
@@ -201,13 +201,17 @@ class Backend(QtCore.QObject):
                     ekey = self._datasets.get(i, "key")
                     dset = self._datasets.get(i, "dataset")
                     for j in range(dset.rowCount()):
+                        # new files use the file ID as key
                         dkey = dset.get(j, "id")
+                        # old files use the file name as key
+                        dpath = Path(dset.get(j, "source_0")).relative_to(dd)
+                        dpath = dpath.as_posix()
                         # Try with forward and backward slashes
                         # On Windows and sdt-python <= 17.4 paths were saved
                         # with backslashes
-                        # dkey_bs = dkey.replace("/", "\\")
-                        dkey_bs = "xxx"
-                        for k in (f"/{ekey}/{dkey}", f"/{ekey}/{dkey_bs}"):
+                        dpath_bs = dpath.replace("/", "\\")
+                        for k in (f"/{ekey}/{dkey}", f"/{ekey}/{dpath}",
+                                  f"/{ekey}/{dpath_bs}"):
                             try:
                                 dset.set(j, "locData", s.get(k))
                             except KeyError:
