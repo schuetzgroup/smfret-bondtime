@@ -202,18 +202,22 @@ class Backend(QtCore.QObject):
                     dset = self._datasets.get(i, "dataset")
                     for j in range(dset.rowCount()):
                         # new files use the file ID as key
-                        dkey = dset.get(j, "id")
-                        # old files use the file name as key
-                        dpath = Path(dset.get(j, "source_0")).relative_to(dd)
-                        dpath = dpath.as_posix()
-                        # Try with forward and backward slashes
-                        # On Windows and sdt-python <= 17.4 paths were saved
-                        # with backslashes
-                        dpath_bs = dpath.replace("/", "\\")
-                        for k in (f"/{ekey}/{dkey}", f"/{ekey}/{dpath}",
-                                  f"/{ekey}/{dpath_bs}"):
+                        dkey = [dset.get(j, "id")]
+                        try:
+                            # old files use the file name as key
+                            dpath = Path(dset.get(j, "source_0")).relative_to(dd)
+                            # try with forward slashes
+                            dpath = dpath.as_posix()
+                            dkey.append(dpath)
+                            # try with backward slashes (sdt-python <= 17.4)
+                            dpath_bs = dpath.replace("/", "\\")
+                            dkey.append(dpath_ps)
+                        except Exception:
+                            pass
+
+                        for k in dkey:
                             try:
-                                dset.set(j, "locData", s.get(k))
+                                dset.set(j, "locData", s.get(f"/{ekey}/{k}"))
                             except KeyError:
                                 pass
                             else:
