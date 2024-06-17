@@ -2,15 +2,11 @@ import argparse
 from pathlib import Path
 import sys
 
-from PyQt5 import QtCore, QtGui, QtQml, QtWidgets
+from PyQt5 import QtQml, QtWidgets
 import matplotlib as mpl
 from sdt import gui
 
-from .backend import Backend
-from .changepoints import Changepoints
-from .filter import Filter
-from .image_pipeline import LifetimeImagePipeline
-from .track_navigator import TrackNavigator
+from .gui import Backend, LifetimeImagePipeline, Filter, Changepoints, TrackNavigator
 
 mpl.rcParams["axes.unicode_minus"] = False
 
@@ -37,7 +33,7 @@ QtQml.qmlRegisterType(TrackNavigator, "BindingTime.Templates", 1, 0,
 if sys.platform != "win32":
     gui.mpl_use_qt_font()
 
-comp = gui.Component(Path(__file__).parent / "main.qml")
+comp = gui.Component(Path(__file__).parent / "gui" / "main.qml")
 comp.create()
 if comp.status_ == gui.Component.Status.Error:
         sys.exit(1)
