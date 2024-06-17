@@ -38,4 +38,4 @@ class Changepoints(QtQuick.QQuickItem):
         fig.canvas.draw_idle()
 
 
-QtQml.qmlRegisterType(Changepoints, "BindingTime.Templates", 1, 0, "Changepoints")
+QtQml.qmlRegisterType(Changepoints, "SmFretBondTime.Templates", 1, 0, "Changepoints")

@@ -209,4 +209,4 @@ class Filter(gui.OptionChooser):
             startEndChangepoints=self.startEndChangepoints)
 
 
-QtQml.qmlRegisterType(Filter, "BindingTime.Templates", 1, 0, "Filter")
+QtQml.qmlRegisterType(Filter, "SmFretBondTime.Templates", 1, 0, "Filter")

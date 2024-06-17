@@ -336,4 +336,4 @@ class Backend(QtCore.QObject):
         return changepointFunc
 
 
-QtQml.qmlRegisterType(Backend, "BindingTime", 1, 0, "Backend")
+QtQml.qmlRegisterType(Backend, "SmFretBondTime", 1, 0, "Backend")

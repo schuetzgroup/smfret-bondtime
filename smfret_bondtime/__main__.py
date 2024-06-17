@@ -15,7 +15,7 @@ mpl.rcParams["axes.unicode_minus"] = False
 app = QtWidgets.QApplication(sys.argv)
 app.setOrganizationName("schuetzgroup")
 app.setOrganizationDomain("biophysics.iap.tuwien.ac.at")
-app.setApplicationName("FRETLifetimeAnalysis")
+app.setApplicationName("SmFretBondTime")
 app.setApplicationVersion("0.1")
 
 argp = argparse.ArgumentParser(

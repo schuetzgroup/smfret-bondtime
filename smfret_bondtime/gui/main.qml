@@ -4,7 +4,7 @@ import QtQuick.Dialogs 1.3 as QQDialogs
 import QtQuick.Layouts 1.15
 import Qt.labs.settings 1.0
 import SdtGui 0.2 as Sdt
-import BindingTime 1.0
+import SmFretBondTime 1.0
 
 
 ApplicationWindow {

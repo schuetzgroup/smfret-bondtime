@@ -102,5 +102,5 @@ class LifetimeImagePipeline(gui.BasicImagePipeline):
 
 
 QtQml.qmlRegisterType(
-    LifetimeImagePipeline, "BindingTime", 1, 0, "LifetimeImagePipeline"
+    LifetimeImagePipeline, "SmFretBondTime", 1, 0, "LifetimeImagePipeline"
 )

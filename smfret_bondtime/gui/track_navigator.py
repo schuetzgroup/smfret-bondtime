@@ -92,4 +92,6 @@ class TrackNavigator(QtQuick.QQuickItem):
         self.currentTrackInfoChanged.emit()
 
 
-QtQml.qmlRegisterType(TrackNavigator, "BindingTime.Templates", 1, 0, "TrackNavigator")
+QtQml.qmlRegisterType(
+    TrackNavigator, "SmFretBondTime.Templates", 1, 0, "TrackNavigator"
+)
