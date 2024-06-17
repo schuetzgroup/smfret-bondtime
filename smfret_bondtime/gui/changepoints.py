@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtQuick
+from PyQt5 import QtCore, QtQuick, QtQml
 from sdt import changepoint, gui
 
 
@@ -36,3 +36,6 @@ class Changepoints(QtQuick.QQuickItem):
         ax.set_xlabel("frame")
         ax.set_ylabel("intensity")
         fig.canvas.draw_idle()
+
+
+QtQml.qmlRegisterType(Changepoints, "BindingTime.Templates", 1, 0, "Changepoints")

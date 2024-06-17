@@ -90,3 +90,6 @@ class TrackNavigator(QtQuick.QQuickItem):
         self.currentTrackNoChanged.emit()
         self.currentTrackDataChanged.emit()
         self.currentTrackInfoChanged.emit()
+
+
+QtQml.qmlRegisterType(TrackNavigator, "BindingTime.Templates", 1, 0, "TrackNavigator")

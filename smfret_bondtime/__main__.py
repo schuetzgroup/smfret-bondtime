@@ -2,11 +2,13 @@ import argparse
 from pathlib import Path
 import sys
 
-from PyQt5 import QtQml, QtWidgets
+from PyQt5 import QtWidgets
 import matplotlib as mpl
 from sdt import gui
 
-from .gui import Backend, LifetimeImagePipeline, Filter, Changepoints, TrackNavigator
+# need to import so that QML types get registered
+from . import gui as bond_gui  # noqa: F401
+
 
 mpl.rcParams["axes.unicode_minus"] = False
 
@@ -20,15 +22,6 @@ argp = argparse.ArgumentParser(
     description="Analyze bond lifetimes via smFRET data")
 argp.add_argument("save", help="Save file", nargs="?", type=Path)
 args = argp.parse_args()
-
-QtQml.qmlRegisterType(Backend, "BindingTime", 1, 0, "Backend")
-QtQml.qmlRegisterType(LifetimeImagePipeline, "BindingTime", 1, 0,
-                      "LifetimeImagePipeline")
-QtQml.qmlRegisterType(Filter, "BindingTime.Templates", 1, 0, "Filter")
-QtQml.qmlRegisterType(Changepoints, "BindingTime.Templates", 1, 0,
-                      "Changepoints")
-QtQml.qmlRegisterType(TrackNavigator, "BindingTime.Templates", 1, 0,
-                      "TrackNavigator")
 
 if sys.platform != "win32":
     gui.mpl_use_qt_font()

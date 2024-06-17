@@ -1,7 +1,7 @@
 import functools
 import operator
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtQml
 import numpy as np
 from sdt import changepoint, gui
 
@@ -208,3 +208,5 @@ class Filter(gui.OptionChooser):
             maxChangepoints=self.maxChangepoints,
             startEndChangepoints=self.startEndChangepoints)
 
+
+QtQml.qmlRegisterType(Filter, "BindingTime.Templates", 1, 0, "Filter")

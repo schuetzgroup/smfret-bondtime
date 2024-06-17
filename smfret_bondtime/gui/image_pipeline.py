@@ -2,7 +2,7 @@ import contextlib
 import math
 from typing import Dict
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtQml
 import numpy as np
 import scipy.ndimage
 from sdt import gui, helper, multicolor
@@ -99,3 +99,8 @@ class LifetimeImagePipeline(gui.BasicImagePipeline):
             seq = helper.Pipeline(
                 corr, d, a, propagate_attrs={"orig_frame_count"})
             return seq
+
+
+QtQml.qmlRegisterType(
+    LifetimeImagePipeline, "BindingTime", 1, 0, "LifetimeImagePipeline"
+)

@@ -4,7 +4,7 @@ import math
 import operator
 from pathlib import Path
 
-from PyQt5 import QtCore, QtQuick
+from PyQt5 import QtCore, QtQml
 import numpy as np
 import pandas as pd
 import scipy.optimize
@@ -334,3 +334,6 @@ class Backend(QtCore.QObject):
             return td
 
         return changepointFunc
+
+
+QtQml.qmlRegisterType(Backend, "BindingTime", 1, 0, "Backend")
