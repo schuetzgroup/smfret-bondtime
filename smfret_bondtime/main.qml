@@ -150,35 +150,18 @@ ApplicationWindow {
                         datasets: backend.datasets
                         previewImage: visible ? imSel.image : null
                     }
-                    ColumnLayout {
-                        RowLayout {
-                            Label {
-                                text: "extra pre/post frames"
-                                Layout.fillWidth: true
-                            }
-                            SpinBox {
-                                id: extraBox
-                                from: 0
-                                to: 999
-                            }
-                        }
-                        Tracker {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
+                    Tracker {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
 
-                            id: track
-                            datasets: backend.datasets
-                            previewData: (
-                                visible ?
-                                imSel.dataset.get(imSel.currentIndex, "locData") :
-                                null
-                            )
-                            previewFrameNumber: imSel.currentFrame
-                        }
-                        /*Button {
-                            Layout.fillWidth: true
-                            text: "Add extra frames…"
-                        }*/
+                        id: track
+                        datasets: backend.datasets
+                        previewData: (
+                            visible ?
+                            imSel.dataset.get(imSel.currentIndex, "locData") :
+                            null
+                        )
+                        previewFrameNumber: imSel.currentFrame
                     }
                     Changepoints {
                         id: changepoints
@@ -407,7 +390,7 @@ ApplicationWindow {
         onLocOptionsChanged: { loc.options = locOptions }
         trackOptions: {"search_range": track.searchRange,
                        "memory": track.memory,
-                       "extra_frames": extraBox.value}
+                       "extra_frames": track.extraFrames}
         onTrackOptionsChanged: {
             // If setting `track`'s properties directly from trackOptions,
             // there is a problem: setting searchRange updates trackOptions,
@@ -416,7 +399,7 @@ ApplicationWindow {
             var opts = trackOptions
             track.searchRange = opts.search_range
             track.memory = opts.memory
-            extraBox.value = opts.extra_frames
+            track.extraFrames = opts.extra_frames
         }
         filterOptions: {
             "mass_thresh": filter.massThresh,

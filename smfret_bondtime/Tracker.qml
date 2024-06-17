@@ -10,6 +10,7 @@ Item {
     property var datasets
     property alias searchRange: track.searchRange
     property alias memory: track.memory
+    property alias extraFrames: extraBox.value
     property Item overlays: Sdt.TrackDisplay {
         trackData: track.trackData
         currentFrame: previewFrameNumber
@@ -26,6 +27,18 @@ Item {
 
         anchors.fill: parent
 
+        RowLayout {
+            Label {
+                text: "extra pre/post frames"
+                Layout.fillWidth: true
+            }
+            SpinBox {
+                id: extraBox
+                from: 0
+                to: 999
+                value: 5
+            }
+        }
         Sdt.TrackOptions {
             id: track
             locData: root.previewData
