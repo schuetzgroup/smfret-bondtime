@@ -34,7 +34,8 @@ QtQml.qmlRegisterType(Changepoints, "BindingTime.Templates", 1, 0,
 QtQml.qmlRegisterType(TrackNavigator, "BindingTime.Templates", 1, 0,
                       "TrackNavigator")
 
-gui.mpl_use_qt_font()
+if sys.platform != "win32":
+    gui.mpl_use_qt_font()
 
 comp = gui.Component(Path(__file__).parent / "main.qml")
 comp.create()
