@@ -85,7 +85,7 @@ class Backend(QtCore.QObject):
                     with contextlib.suppress(ValueError):
                         entry[srcName] = Path(p).relative_to(dd).as_posix()
 
-        data = {"file_version": 2,
+        data = {"file_version": 3,
                 "channels": self.imagePipeline.channels,
                 "data_dir": self.dataDir,
                 "excitation_seq": self.imagePipeline.excitationSeq,

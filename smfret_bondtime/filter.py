@@ -17,10 +17,10 @@ class Filter(gui.OptionChooser):
 
     def __init__(self, parent):
         super().__init__(
-            argProperties=["trackData", "frameCount", "filterInitial",
-                           "filterTerminal", "bgThresh", "massThresh",
-                           "minLength", "minChangepoints", "maxChangepoints",
-                           "startEndChangepoints"],
+            argProperties=[
+                "trackData", "frameCount","bgThresh", "massThresh", "minLength",
+                "minChangepoints", "maxChangepoints", "startEndChangepoints"
+            ],
             resultProperties=["paramAccepted", "paramRejected"],
             parent=parent)
         self._datasets = None
@@ -48,8 +48,6 @@ class Filter(gui.OptionChooser):
     manualRejected = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
     manualUndecided = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
     navigatorData = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
-    filterInitial = gui.QmlDefinedProperty()
-    filterTerminal = gui.QmlDefinedProperty()
     massThresh = gui.QmlDefinedProperty()
     bgThresh = gui.QmlDefinedProperty()
     minLength = gui.QmlDefinedProperty()
@@ -110,9 +108,10 @@ class Filter(gui.OptionChooser):
         fig.canvas.draw_idle()
 
     @staticmethod
-    def workerFunc(trackData, frameCount, filterInitial, filterTerminal,
-                   bgThresh, massThresh, minLength, minChangepoints,
-                   maxChangepoints, startEndChangepoints):
+    def workerFunc(
+        trackData, frameCount, bgThresh, massThresh, minLength, minChangepoints,
+        maxChangepoints, startEndChangepoints
+    ):
         if trackData is None or frameCount < 1:
             return None, None
         n_frames = frameCount
@@ -121,15 +120,6 @@ class Filter(gui.OptionChooser):
             actual_td = trackData[trackData["extra_frame"] == 0]
         except KeyError:
             actual_td = trackData
-        if filterInitial:
-            bad_p = actual_td.loc[actual_td["frame"] == 0, "particle"].unique()
-            trackData.loc[trackData["particle"].isin(bad_p),
-                          "filter_param"] = 1
-        if filterTerminal:
-            bad_p = actual_td.loc[actual_td["frame"] == n_frames - 1,
-                                  "particle"].unique()
-            trackData.loc[trackData["particle"].isin(bad_p),
-                          "filter_param"] = 1
         if bgThresh > 0:
             # TODO: only use non-interpolated?
             bad_p = actual_td.groupby("particle")["bg"].mean() >= bgThresh
@@ -213,8 +203,6 @@ class Filter(gui.OptionChooser):
     def getFilterFunc(self):
         return functools.partial(
             self.workerFunc,
-            filterInitial=self.filterInitial,
-            filterTerminal=self.filterTerminal,
             massThresh=self.massThresh, bgThresh=self.bgThresh,
             minLength=self.minLength, minChangepoints=self.minChangepoints,
             maxChangepoints=self.maxChangepoints,

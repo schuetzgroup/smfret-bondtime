@@ -52,8 +52,6 @@ T.Filter {
             markerSize: 3.0
         }
     ]
-    property alias filterInitial: filterInitialCheck.checked
-    property alias filterTerminal: filterTerminalCheck.checked
     property alias massThresh: massThreshSel.value
     property alias bgThresh: bgThreshSel.value
     property alias minLength: minLengthSel.value
@@ -118,18 +116,6 @@ T.Filter {
                 columns: 2
                 anchors.fill: parent
 
-                Switch {
-                    id: filterInitialCheck
-                    text: "remove initially present tracks"
-                    checked: false
-                    Layout.columnSpan: 2
-                }
-                Switch {
-                    id: filterTerminalCheck
-                    text: "remove terminally present tracks"
-                    checked: false
-                    Layout.columnSpan: 2
-                }
                 Label {
                     text: "max. background"
                     Layout.fillWidth: true

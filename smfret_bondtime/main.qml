@@ -419,8 +419,6 @@ ApplicationWindow {
             extraBox.value = opts.extra_frames
         }
         filterOptions: {
-            "filter_initial": filter.filterInitial,
-            "filter_terminal": filter.filterTerminal,
             "mass_thresh": filter.massThresh,
             "bg_thresh": filter.bgThresh,
             "min_length": filter.minLength,
@@ -430,8 +428,6 @@ ApplicationWindow {
         }
         onFilterOptionsChanged: {
             var o = filterOptions
-            filter.filterInitial = o.filter_initial
-            filter.filterTerminal = o.filter_terminal
             filter.massThresh = o.mass_thresh
             filter.bgThresh = o.bg_thresh
             filter.minLength = o.min_length != undefined ? o.min_length : 2
