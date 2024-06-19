@@ -1,17 +1,20 @@
 import contextlib
 from decimal import Decimal
+import math
 from pathlib import Path
+import warnings
 
 import pandas as pd
+from sdt import io, multicolor
 
-from sdt import io
+from .analysis import calc_track_stats
 
 
 special_keys = ["registration"]
 
 
-def load_data(yaml_path, convert_interval=Decimal, special=False):
-    from sdt import multicolor, roi  # noqa F401; needed to load YAML file
+def load_data(yaml_path, convert_interval=Decimal, special=False, n_frames={}):
+    from sdt import roi  # noqa F401; needed to load YAML file
 
     yaml_path = Path(yaml_path)
     with yaml_path.open() as yf:
@@ -20,7 +23,7 @@ def load_data(yaml_path, convert_interval=Decimal, special=False):
     version = yaml_data.get("file_version", 1)
 
     if version <= 2:
-        md, tracks, track_stats = load_data_v2(yaml_path, special)
+        md, tracks, track_stats = load_data_v2(yaml_path, special, n_frames)
     elif version == 3:
         md, tracks, track_stats = load_data_v3(yaml_path, special)
     else:
@@ -53,14 +56,11 @@ def load_data(yaml_path, convert_interval=Decimal, special=False):
     return md, tracks, track_stats
 
 
-def load_data_v2(yaml_path, special=False):
-    raise RuntimeError("v2 not yet fully implemented")
-
+def load_data_v2(yaml_path, special=False, n_frames={}):
     yaml_path = Path(yaml_path)
     with yaml_path.open() as yf:
         yaml_data = io.yaml.safe_load(yf)
 
-    yaml_data["data_dir"] = Path(yaml_data["data_dir"])
     if "channels" in yaml_data:
         ch = yaml_data["channels"]
         for v in ch.values():
@@ -88,8 +88,7 @@ def load_data_v2(yaml_path, special=False):
                     # Replace backslashes by forward slashes
                     # On Windows and sdt-python <= 17.4 paths were saved
                     # with backslashes
-                    f = f.replace("\\", "/")
-                    entry[src] = (yaml_data["data_dir"] / f).as_posix()
+                    entry[src] = f.replace("\\", "/")
 
         if not special:
             for k in special_keys:
@@ -108,11 +107,8 @@ def load_data_v2(yaml_path, special=False):
                     possible_h5_keys = [dkey]
                     try:
                         # old files use the file name as key
-                        dpath = Path(dfiles["source_0"]).relative_to(
-                            yaml_data["data_dir"]
-                        )
+                        dpath = Path(dfiles["source_0"]).as_posix()
                         # try with forward slashes
-                        dpath = dpath.as_posix()
                         possible_h5_keys.append(dpath)
                         # try with backward slashes (sdt-python <= 17.4)
                         dpath_bs = dpath.replace("/", "\\")
@@ -128,7 +124,33 @@ def load_data_v2(yaml_path, special=False):
                         else:
                             break
 
-    return yaml_data, tracks
+    # calculate track stats
+    data_dir = Path(yaml_data["data_dir"])
+    n_frames = {str(k): v for k, v in n_frames}
+    frame_sel = multicolor.FrameSelector(yaml_data["excitation_seq"])
+    acc_src = yaml_data["channels"]["acceptor"]["source"]
+    track_stats = {}
+    for interval, trcs in tracks.items():
+        if interval in special_keys:
+            continue
+        for did, t in trcs.items():
+            f = yaml_data["files"][interval][did][acc_src]
+            try:
+                with io.ImageSequence(data_dir / f) as ims:
+                    nf = len(frame_sel.select(ims, "d"))
+            except Exception:
+                nf = n_frames.get(interval, math.inf)
+            if not math.isfinite(nf):
+                warnings.warn(f"could not determine number of frames for {f}")
+            s = calc_track_stats(t, nf)
+            for col in "filter_param", "filter_manual":
+                if col in t:
+                    s[col] = t.groupby("particle")[col].first()
+                else:
+                    s[col] = -1
+            track_stats.setdefault(interval, {})[did] = s
+
+    return yaml_data, tracks, track_stats
 
 
 def load_data_v3(yaml_path, special=False):
