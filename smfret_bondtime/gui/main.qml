@@ -59,6 +59,7 @@ ApplicationWindow {
                 TabButton { text: "Track" }
                 TabButton { text: "Changepoints" }
                 TabButton { text: "Filter" }
+                TabButton { text: "Results" }
             }
         }
 
@@ -247,6 +248,12 @@ ApplicationWindow {
                     }
                 }
             }
+            Results {
+                id: results
+
+                datasets: backend.datasets
+                minLength: filter.minLength
+            }
         }
 
         states: [
@@ -379,6 +386,14 @@ ApplicationWindow {
                     target: imSel
                     currentChannel: "corrAcceptor"
                 }
+            },
+            State {
+                name: "results"
+                when: actionTab.currentIndex == 8
+                PropertyChanges {
+                    target: mainStack
+                    currentIndex: 4
+                }
             }
         ]
     }
@@ -429,6 +444,20 @@ ApplicationWindow {
         }
         registrationLocOptions: reg.locateSettings
         onRegistrationLocOptionsChanged: { reg.locateSettings = registrationLocOptions }
+        fitOptions:{
+            "min_track_count": results.minCount,
+            "n_boot": results.nBoot,
+            "random_seed": results.randomSeed
+        }
+        onFitOptionsChanged: {
+            var o = fitOptions
+            if (o.min_track_count != undefined)
+                results.minCount = o.min_track_count
+            if (o.n_boot != undefined)
+                results.nBoot = o.n_boot
+            if (o.random_seed != undefined)
+                results.randomSeed = o.random_seed
+        }
     }
     LifetimeImagePipeline {
         id: imagePipe
