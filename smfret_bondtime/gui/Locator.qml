@@ -58,7 +58,7 @@ Item {
             anchors.fill: parent
             dataset: root.datasets
             argRoles: root.datasets.fileRoles
-            resultRole: "locData"
+            resultRoles: ["locData"]
             displayRole: root.datasets.fileRoles[0]
             errorPolicy: Sdt.BatchWorker.ErrorPolicy.Abort
         }

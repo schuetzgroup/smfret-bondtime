@@ -79,7 +79,7 @@ Item {
             anchors.fill: parent
             dataset: root.datasets
             argRoles: ["locData", ...root.datasets.fileRoles]
-            resultRole: "locData"
+            resultRoles: ["locData", "trackStats"]
         }
 
         onRejected: { trackBatchWorker.abort() }

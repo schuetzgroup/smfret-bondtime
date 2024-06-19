@@ -13,6 +13,9 @@ from sdt import (brightness, changepoint, gui, helper, io, loc, multicolor,
                  spatial)
 import trackpy
 
+from ..analysis import calc_track_stats
+from ..io import load_data
+
 
 class Backend(QtCore.QObject):
     _specialKeys = ["registration"]
@@ -26,7 +29,7 @@ class Backend(QtCore.QObject):
         self._frameSel = multicolor.FrameSelector("")
         self._dataDir = ""
         self._datasets = gui.DatasetCollection()
-        self._datasets.dataRoles = ["locData"]
+        self._datasets.dataRoles = ["locData", "trackStats"]
         for k in self._specialKeys:
             self._datasets.append(k, special=True)
         self._registrationLocOptions = {}
@@ -85,26 +88,29 @@ class Backend(QtCore.QObject):
                     with contextlib.suppress(ValueError):
                         entry[srcName] = Path(p).relative_to(dd).as_posix()
 
-        data = {"file_version": 3,
-                "channels": self.imagePipeline.channels,
-                "data_dir": self.dataDir,
-                "excitation_seq": self.imagePipeline.excitationSeq,
-                "loc_algorithm": self.locAlgorithm,
-                "loc_options": self.locOptions,
-                "track_options": self.trackOptions,
-                "files": fl,
-                "registration_loc": self.registrationLocOptions,
-                "registrator": self.imagePipeline.registrator,
-                "bleed_through": self.imagePipeline.bleedThrough,
-                "filter_options": self.filterOptions,
-                "fit_options": self.fitOptions,
-                "changepoint_options": self.changepointOptions}
+        data = {
+            "file_version": 3,
+            "channels": self.imagePipeline.channels,
+            "data_dir": self.dataDir,
+            "excitation_seq": self.imagePipeline.excitationSeq,
+            "loc_algorithm": self.locAlgorithm,
+            "loc_options": self.locOptions,
+            "track_options": self.trackOptions,
+            "files": fl,
+            "registration_loc": self.registrationLocOptions,
+            "registrator": self.imagePipeline.registrator,
+            "bleed_through": self.imagePipeline.bleedThrough,
+            "filter_options": self.filterOptions,
+            "changepoint_options": self.changepointOptions,
+            "fit_options": self.fitOptions,
+        }
 
         ypath = Path(url.toLocalFile()).with_suffix(".yaml")
         with ypath.open("w") as yf:
             io.yaml.safe_dump(data, yf)
 
-        import tables, warnings
+        import tables
+        import warnings
         with pd.HDFStore(ypath.with_suffix(".h5"), "w") as s, \
                 warnings.catch_warnings():
             warnings.simplefilter("ignore", tables.NaturalNameWarning)
@@ -115,13 +121,10 @@ class Backend(QtCore.QObject):
                     dkey = dset.get(j, "id")
                     ld = dset.get(j, "locData")
                     if isinstance(ld, pd.DataFrame):
-                        s.put(f"/{ekey}/{dkey}", ld)
-            # for t, df in self._survivalFuncs.items():
-            #     s.put(f"/survival_funcs/{t}", df)
-            # if self._survivalFits is not None:
-            #     s.put("/survival_fits", self._survivalFits)
-            # if self._finalFit is not None:
-            #     s.put("/final_fit", self._finalFit)
+                        s.put(f"/{ekey}/{dkey}/loc", ld)
+                    ts = dset.get(j, "trackStats")
+                    if isinstance(ts, pd.DataFrame):
+                        s.put(f"/{ekey}/{dkey}/track_stats", ts)
 
         self.saveFile = QtCore.QUrl.fromLocalFile(str(ypath))
 
@@ -132,18 +135,14 @@ class Backend(QtCore.QObject):
         else:
             ypath = Path(url)
         try:
-            with ypath.open() as yf:
-                data = io.yaml.safe_load(yf)
-        except FileNotFoundError:
+            data, tracks, trackStats = load_data(
+                ypath, convert_interval=None, special=True
+            )
+        except (FileNotFoundError, RuntimeError):
             return
 
         if "channels" in data:
-            ch = data["channels"]
-            for v in ch.values():
-                if "source" not in v:
-                    # sdt-python <= 17.4 YAML file
-                    v["source"] = f"source_{v.pop('source_id')}"
-            self.imagePipeline.channels = ch
+            self.imagePipeline.channels = data["channels"]
         if "data_dir" in data:
             self.dataDir = data["data_dir"]
         if "excitation_seq" in data:
@@ -153,13 +152,8 @@ class Backend(QtCore.QObject):
         if "loc_options" in data:
             self.locOptions = data["loc_options"]
         if "track_options" in data:
-            t = data["track_options"]
-            t.setdefault("extra_frames", 0)  # sdt-python <= 17.4 YAML file
             self.trackOptions = data["track_options"]
         if "registrator" in data:
-            reg = data["registrator"]
-            if set(reg.channel_names) != {"acceptor", "donor"}:
-                reg.channel_names = ["acceptor", "donor"]
             self.imagePipeline.registrator = data["registrator"]
         if "registration_loc" in data:
             self.registrationLocOptions = data["registration_loc"]
@@ -172,56 +166,24 @@ class Backend(QtCore.QObject):
         if "changepoint_options" in data:
             self.changepointOptions = data["changepoint_options"]
 
-        dd = Path(self.dataDir)
-        # older YAML files store special dataset files under "special_files"
-        all_files = {**data.get("special_files", {}), **data.get("files", {})}
-        if all_files:
-            for interval, files in all_files.items():
-                if isinstance(files, list):
-                    # older YAML files store list of file names
-                    all_files[interval] = {n: f for n, f in enumerate(files)}
-            for files in all_files.values():
-                for entry in files.values():
-                    for src, f in entry.items():
-                        # Replace backslashes by forward slashes
-                        # On Windows and sdt-python <= 17.4 paths were saved
-                        # with backslashes
-                        f = f.replace("\\", "/")
-                        entry[src] = (dd / f).as_posix()
-            self._datasets.fileLists = all_files
+        fl = data.get("files", {})
+        if fl:
+            self._datasets.fileLists = fl
             for i in range(self._datasets.count):
                 self._datasets.set(
                     i, "special",
                     self._datasets.get(i, "key") in self._specialKeys)
             self.registrationDatasetChanged.emit()
-        h5path = ypath.with_suffix(".h5")
-        if h5path.exists():
-            with pd.HDFStore(h5path, "r") as s:
-                for i in range(self._datasets.rowCount()):
-                    ekey = self._datasets.get(i, "key")
-                    dset = self._datasets.get(i, "dataset")
-                    for j in range(dset.rowCount()):
-                        # new files use the file ID as key
-                        dkey = [dset.get(j, "id")]
-                        try:
-                            # old files use the file name as key
-                            dpath = Path(dset.get(j, "source_0")).relative_to(dd)
-                            # try with forward slashes
-                            dpath = dpath.as_posix()
-                            dkey.append(dpath)
-                            # try with backward slashes (sdt-python <= 17.4)
-                            dpath_bs = dpath.replace("/", "\\")
-                            dkey.append(dpath_ps)
-                        except Exception:
-                            pass
 
-                        for k in dkey:
-                            try:
-                                dset.set(j, "locData", s.get(f"/{ekey}/{k}"))
-                            except KeyError:
-                                pass
-                            else:
-                                break
+        for i in range(self._datasets.rowCount()):
+            intv = self._datasets.get(i, "key")
+            dset = self._datasets.get(i, "dataset")
+            for j in range(dset.rowCount()):
+                fid = dset.get(j, "id")
+                with contextlib.suppress(KeyError):
+                    dset.set(j, "locData", tracks[intv][fid])
+                with contextlib.suppress(KeyError):
+                    dset.set(j, "trackStats", trackStats[intv][fid])
 
         self.saveFile = QtCore.QUrl.fromLocalFile(str(ypath))
 
@@ -284,6 +246,9 @@ class Backend(QtCore.QObject):
                 trc = locData.copy()
                 # This adds the "particle" column
                 trc["particle"] = 0
+                trc_stats = pd.DataFrame(
+                    columns=["start", "end", "track_len", "censored", "bg", "mass"]
+                )
             else:
                 if "extra_frame" in locData:
                     locData = locData[locData["extra_frame"] == 0]
@@ -295,15 +260,21 @@ class Backend(QtCore.QObject):
                             for src, f in zip(self.datasets.fileRoles, files)}
                     pipe = self.imagePipeline.processFunc(imgs, "corrAcceptor")
                     trc = self.trackExtraFrames(trc, extra, len(pipe))
-                    brightness.from_raw_image(trc, pipe, radius=3,
-                                              mask="circle")
+                    brightness.from_raw_image(
+                        trc, pipe, radius=3, mask="circle"
+                    )
+                    trc_stats = calc_track_stats(trc, len(pipe))
+                except Exception:
+                    trc_stats = pd.DataFrame(
+                        columns=["start", "end", "track_len", "censored", "bg", "mass"]
+                    )
+                    raise
                 finally:
                     for i in imgs.values():
                         i.close()
-
-            trc["filter_param"] = -1
-            trc["filter_manual"] = -1
-            return trc
+            trc_stats["filter_param"] = -1
+            trc_stats["filter_manual"] = -1
+            return trc, trc_stats
 
         return trackFunc
 
@@ -319,19 +290,22 @@ class Backend(QtCore.QObject):
         opts = self.changepointOptions
         cp_det = changepoint.Pelt()
 
-        def changepointFunc(trackData):
-            if len(trackData) < 1:
-                return trackData.copy()
-            td = trackData.sort_values(["particle", "frame"])
+        def changepointFunc(tracks, stats):
+            if len(tracks) < 1:
+                return tracks.copy(), stats.copy()
+            td = tracks.sort_values(["particle", "frame"])
+            st = stats.copy()
             cps = []
+            st["changepoints"] = -1
             for p, (idx, mass) in helper.split_dataframe(
                     td, "particle", ["mass"], type="array_list",
                     keep_index=True, sort=False):
                 c = cp_det.find_changepoints(mass, **opts)
                 s = self.indices_to_segments(c, len(mass))
                 cps.append(pd.Series(s, index=idx))
+                st.loc[p, "changepoints"] = len(c)
             td["mass_seg"] = pd.concat(cps)
-            return td
+            return td, st
 
         return changepointFunc
 

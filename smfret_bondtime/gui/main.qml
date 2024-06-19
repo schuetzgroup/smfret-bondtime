@@ -344,6 +344,7 @@ ApplicationWindow {
                 PropertyChanges {
                     target: changepoints
                     trackData: imSel.dataset.get(imSel.currentIndex, "locData")
+                    trackStats: imSel.dataset.get(imSel.currentIndex, "trackStats")
                 }
                 PropertyChanges {
                     target: imSel
@@ -372,7 +373,7 @@ ApplicationWindow {
                 PropertyChanges {
                     target: filter
                     trackData: imSel.dataset.get(imSel.currentIndex, "locData")
-                    currentFrameCount: imSel.currentFrameCount
+                    trackStats: imSel.dataset.get(imSel.currentIndex, "trackStats")
                 }
                 PropertyChanges {
                     target: imSel

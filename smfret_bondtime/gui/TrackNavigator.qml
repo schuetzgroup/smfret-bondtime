@@ -149,14 +149,6 @@ T.TrackNavigator {
             visible: root.showStatistics
         }
         Label {
-            text: "noise"
-            visible: root.showStatistics
-        }
-        Label {
-            text: root.currentTrackInfo.bg_dev.toFixed(0)
-            visible: root.showStatistics
-        }
-        Label {
             text: "length"
             visible: root.showStatistics
         }

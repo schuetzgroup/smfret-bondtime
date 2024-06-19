@@ -4,15 +4,21 @@ from sdt import gui
 
 
 class TrackNavigator(QtQuick.QQuickItem):
-    _invalidTrackInfo = {"start": -1, "end": -1, "mass": float("NaN"),
-                         "bg": float("NaN"), "bg_dev": float("NaN"),
-                         "length": 0, "status": "undefined"}
+    _invalidTrackInfo = {
+        "start": -1,
+        "end": -1,
+        "mass": float("NaN"),
+        "bg": float("NaN"),
+        "length": 0,
+        "status": "undefined",
+    }
     _statusMap = {-1: "undecided", 0: "accepted", 1: "rejected"}
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._trcList = []
         self._trackData = None
+        self._trackStats = None
         self._currentTrackNo = -1
         self._currentTrackData = None
         self._currentTrackInfo = self._invalidTrackInfo
@@ -35,11 +41,30 @@ class TrackNavigator(QtQuick.QQuickItem):
             return
         self._trackData = t
         if t is None:
-            self._trackList = []
+            self._currentTrackData = None
         else:
-            self._trcList = np.sort(self._trackData["particle"].unique()
-                                    ).tolist()
+            self._currentTrackData = self._trackData[
+                self._trackData["particle"] == self.currentTrackNo
+            ].sort_values("frame")
         self.trackDataChanged.emit()
+        self.currentTrackDataChanged.emit()
+
+    trackStatsChanged = QtCore.pyqtSignal()
+
+    @QtCore.pyqtProperty("QVariant", notify=trackStatsChanged)
+    def trackStats(self):
+        return self._trackStats
+
+    @trackStats.setter
+    def trackStats(self, s):
+        if s is self._trackStats:
+            return
+        self._trackStats = s
+        if s is None:
+            self._trcList = []
+        else:
+            self._trcList = np.sort(self._trackStats.index).tolist()
+        self.trackStatsChanged.emit()
         self._trackNoListChanged.emit()
 
     _trackNoListChanged = QtCore.pyqtSignal()
@@ -59,34 +84,24 @@ class TrackNavigator(QtQuick.QQuickItem):
         if self._currentTrackNo == t:
             return
         self._currentTrackNo = t
-        if self._trackData is None or t < 0:
-            ftd = None
-            self._currentTrackData = None
+        try:
+            s = self._trackStats.loc[t]
+            self._currentTrackInfo = {
+                "start": int(s.get("start", -1)),
+                "end": int(s.get("end", -1)),
+                "mass": float(s.get("mass", "NaN")),
+                "bg": float(s.get("bg", "NaN")),
+                "length": int(s.get("track_len", 0)),
+                "status": self._statusMap.get(s.get("filter_manual", ""), "undefined"),
+            }
+            if self._trackData is not None:
+                self._currentTrackData = self._trackData[
+                    self._trackData["particle"] == t
+                ].sort_values("frame")
+        except (KeyError, AttributeError):
+            # t is not in self._trackStats or self._trackStats is None
             self._currentTrackInfo = self._invalidTrackInfo
-        else:
-            ftd = self._trackData[self._trackData["particle"] == t
-                                  ].sort_values("frame")
-            if not (len(ftd)):
-                self._currentTrackData = None
-                self._currentTrackInfo = self._invalidTrackInfo
-            else:
-                self._currentTrackData = ftd
-                try:
-                    td = ftd[ftd["extra_frame"] == 0]
-                except KeyError:
-                    td = ftd
-                f = td["frame"].to_numpy()
-                start = int(f[0])
-                end = int(f[-1])
-                status = (self._statusMap[td["filter_manual"].iloc[0]]
-                          if "filter_manual" in td
-                          else None)
-                self._currentTrackInfo = {
-                    "start": start, "end": end,
-                    "mass": float(td["mass"].mean()),
-                    "bg": float(td["bg"].mean()),
-                    "bg_dev": float(td["bg_dev"].mean()), "length": len(td),
-                    "status": status}
+            self._currentTrackData = None
         self.currentTrackNoChanged.emit()
         self.currentTrackDataChanged.emit()
         self.currentTrackInfoChanged.emit()

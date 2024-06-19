@@ -1,5 +1,4 @@
 import functools
-import operator
 
 from PyQt5 import QtCore, QtQml
 import numpy as np
@@ -9,28 +8,30 @@ from sdt import changepoint, gui
 # TODO: No need to derive from OptionChooser since there are no intensive
 # tasks that need to be done in a thread
 class Filter(gui.OptionChooser):
-    _invalidTrackInfo = {"start": -1, "end": -1, "mass": float("NaN"),
-                         "bg": float("NaN"), "bg_dev": float("NaN"),
-                         "length": 0, "status": "undefined"}
-
-    _statusMap = {-1: "undecided", 0: "accepted", 1: "rejected"}
-
     def __init__(self, parent):
         super().__init__(
             argProperties=[
-                "trackData", "frameCount","bgThresh", "massThresh", "minLength",
-                "minChangepoints", "maxChangepoints", "startEndChangepoints"
+                "trackData",
+                "trackStats",
+                "bgThresh",
+                "massThresh",
+                "minLength",
+                "minChangepoints",
+                "maxChangepoints",
+                "startEndChangepoints",
             ],
             resultProperties=["paramAccepted", "paramRejected"],
-            parent=parent)
+            parent=parent,
+        )
         self._datasets = None
         self._trackData = None
+        self._trackStats = None
         self._paramAccepted = None
         self._paramRejected = None
         self._manualAccepted = None
         self._manualRejected = None
         self._manualUndecided = None
-        self._navigatorData = None
+        self._navigatorStats = None
 
         self._showManual = 0
 
@@ -38,7 +39,6 @@ class Filter(gui.OptionChooser):
         self.showManualChanged.connect(self._updateManualTracks)
 
     datasets = gui.SimpleQtProperty(QtCore.QVariant)
-    trackData = gui.SimpleQtProperty(QtCore.QVariant, comp=operator.is_)
     currentTrackData = gui.QmlDefinedProperty()
     currentTrackInfo = gui.QmlDefinedProperty()
     frameCount = gui.QmlDefinedProperty()
@@ -47,7 +47,7 @@ class Filter(gui.OptionChooser):
     manualAccepted = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
     manualRejected = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
     manualUndecided = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
-    navigatorData = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
+    navigatorStats = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
     massThresh = gui.QmlDefinedProperty()
     bgThresh = gui.QmlDefinedProperty()
     minLength = gui.QmlDefinedProperty()
@@ -68,9 +68,22 @@ class Filter(gui.OptionChooser):
     def trackData(self, td):
         if self._trackData is td:
             return
-        hadChangepoints = self.hasChangepoints
         self._trackData = td
         self.trackDataChanged.emit()
+
+    trackStatsChanged = QtCore.pyqtSignal()
+
+    @QtCore.pyqtProperty(QtCore.QVariant, notify=trackStatsChanged)
+    def trackStats(self):
+        return self._trackStats
+
+    @trackStats.setter
+    def trackStats(self, ts):
+        if self._trackStats is ts:
+            return
+        hadChangepoints = self.hasChangepoints
+        self._trackStats = ts
+        self.trackStatsChanged.emit()
         if hadChangepoints != self.hasChangepoints:
             self.hasChangepointsChanged.emit()
 
@@ -78,11 +91,15 @@ class Filter(gui.OptionChooser):
 
     @QtCore.pyqtProperty(bool, notify=hasChangepointsChanged)
     def hasChangepoints(self):
-        return self._trackData is not None and "mass_seg" in self._trackData
+        return self._trackStats is not None and "changepoints" in self._trackStats
 
     @QtCore.pyqtSlot()
     def updatePlot(self):
-        if self.timeTraceFig is None or self.currentTrackData is None:
+        if (
+            self.timeTraceFig is None
+            or self.currentTrackData is None
+            or len(self.currentTrackData) < 1
+        ):
             return
 
         d = self.currentTrackData["mass"].to_numpy()
@@ -98,8 +115,7 @@ class Filter(gui.OptionChooser):
         except IndexError:
             ax = fig.add_subplot()
         ax.cla()
-        changepoint.plot_changepoints(
-            d, cp, time=self.currentTrackData["frame"], ax=ax)
+        changepoint.plot_changepoints(d, cp, time=self.currentTrackData["frame"], ax=ax)
         ax.set_ylim(d.min(), d.max())
         ax.axvline(self.currentTrackInfo["start"], color="g")
         ax.axvline(self.currentTrackInfo["end"], color="r")
@@ -109,92 +125,88 @@ class Filter(gui.OptionChooser):
 
     @staticmethod
     def workerFunc(
-        trackData, frameCount, bgThresh, massThresh, minLength, minChangepoints,
-        maxChangepoints, startEndChangepoints
+        trackData,
+        trackStats,
+        bgThresh,
+        massThresh,
+        minLength,
+        minChangepoints,
+        maxChangepoints,
+        startEndChangepoints,
     ):
-        if trackData is None or frameCount < 1:
+        if trackStats is None or trackData is None:
             return None, None
-        n_frames = frameCount
-        trackData["filter_param"] = 0
-        try:
-            actual_td = trackData[trackData["extra_frame"] == 0]
-        except KeyError:
-            actual_td = trackData
+        flt = np.zeros(len(trackStats), dtype=bool)
         if bgThresh > 0:
-            # TODO: only use non-interpolated?
-            bad_p = actual_td.groupby("particle")["bg"].mean() >= bgThresh
-            bad_p = bad_p.index[bad_p.to_numpy()]
-            trackData.loc[trackData["particle"].isin(bad_p),
-                          "filter_param"] = 1
+            flt |= trackStats["bg"] >= bgThresh
         if massThresh > 0:
-            # TODO: only use non-interpolated?
-            bad_p = actual_td.groupby("particle")["mass"].mean() <= massThresh
-            bad_p = bad_p.index[bad_p.to_numpy()]
-            trackData.loc[trackData["particle"].isin(bad_p),
-                          "filter_param"] = 1
+            flt |= trackStats["mass"] <= massThresh
         if minLength > 1:
-            bad_p = (actual_td.groupby("particle")["frame"].apply(len) <
-                     minLength)
-            bad_p = bad_p.index[bad_p.to_numpy()]
-            trackData.loc[trackData["particle"].isin(bad_p),
-                          "filter_param"] = 1
-        if "mass_seg" in trackData:
-            cp_count = trackData.groupby("particle")["mass_seg"].apply(
-                lambda x: len(x.unique())) - 1
-
+            flt |= trackStats["track_len"] < minLength
+        if "changepoints" in trackStats:
+            cp = trackStats["changepoints"].to_numpy(copy=True)
             if startEndChangepoints:
-                presentAtStart = actual_td.loc[
-                    actual_td["frame"] == 0, "particle"].unique()
-                presentAtEnd = actual_td.loc[
-                    actual_td["frame"] == n_frames - 1, "particle"].unique()
-                cp_count[cp_count.index.isin(presentAtStart)] += 1
-                cp_count[cp_count.index.isin(presentAtEnd)] += 1
+                cp += trackStats["censored"] & 1
+                cp += trackStats["censored"] & 2
+            flt |= cp < minChangepoints
+            flt |= cp > maxChangepoints
+        trackStats["filter_param"] = flt.astype(int)
 
-            bad_p = (cp_count < minChangepoints) | (cp_count > maxChangepoints)
-            bad_p = bad_p.index[bad_p.to_numpy()]
-            trackData.loc[trackData["particle"].isin(bad_p),
-                          "filter_param"] = 1
-        fp = trackData["filter_param"] == 0
-        return trackData[fp], trackData[~fp]
+        fp = trackStats["filter_param"] == 0
+        msk = trackData["particle"].isin(fp.index[fp])
+        return trackData[msk], trackData[~msk]
 
     @QtCore.pyqtSlot(int)
     def acceptTrack(self, index):
-        self._trackData.loc[self._trackData["particle"] == index,
-                            "filter_manual"] = 0
+        self._trackStats.loc[index, "filter_manual"] = 0
         self._updateManualTracks()
 
     @QtCore.pyqtSlot(int)
     def rejectTrack(self, index):
-        self._trackData.loc[self._trackData["particle"] == index,
-                            "filter_manual"] = 1
+        self._trackStats.loc[index, "filter_manual"] = 1
         self._updateManualTracks()
 
     def _updateManualTracks(self):
-        if self._trackData is None:
-            self._navigatorData = None
+        if self._trackData is None or self._trackStats is None:
+            self._navigatorStats = None
             self._manualAccepted = None
             self._manualRejected = None
             self._manualUndecided = None
         else:
-            fp = self._trackData[self._trackData["filter_param"] == 0]
+            fp = self._trackStats[self._trackStats["filter_param"] == 0]
+
             if self._showManual == 1:  # show only undecided
-                self._navigatorData = self._manualUndecided = \
-                    fp[fp["filter_manual"] == -1]
-                self._manualAccepted = self._manualRejected = fp.iloc[:0]
+                self._navigatorStats = fp[fp["filter_manual"] == -1]
+                self._manualUndecided = self._trackData[
+                    self._trackData["particle"].isin(self._navigatorStats.index)
+                ]
+                self._manualAccepted = self._manualRejected = self._trackData.iloc[:0]
             elif self._showManual == 2:  # show only accepted
-                self._navigatorData = self._manualAccepted = \
-                    fp[fp["filter_manual"] == 0]
-                self._manualUndecided = self._manualRejected = fp.iloc[:0]
+                self._navigatorStats = fp[fp["filter_manual"] == 0]
+                self._manualAccepted = self._trackData[
+                    self._trackData["particle"].isin(self._navigatorStats.index)
+                ]
+                self._manualUndecided = self._manualRejected = self._trackData.iloc[:0]
             elif self._showManual == 3:  # show only rejected
-                self._navigatorData = self._manualRejected = \
-                    fp[fp["filter_manual"] == 1]
-                self._manualUndecided = self._manualAccepted = fp.iloc[:0]
+                self._navigatorStats = fp[fp["filter_manual"] == 1]
+                self._manualRejected = self._trackData[
+                    self._trackData["particle"].isin(self._navigatorStats.index)
+                ]
+                self._manualAccepted = self._manualUndecided = self._trackData.iloc[:0]
             else:
-                self._navigatorData = fp
-                self._manualAccepted = fp[fp["filter_manual"] == 0]
-                self._manualRejected = fp[fp["filter_manual"] == 1]
-                self._manualUndecided = fp[fp["filter_manual"] == -1]
-        self.navigatorDataChanged.emit()
+                self._navigatorStats = fp
+                self._manualAccepted = self._trackData[
+                    self._trackData["particle"].isin(fp.index[fp["filter_manual"] == 0])
+                ]
+                self._manualRejected = self._trackData[
+                    self._trackData["particle"].isin(fp.index[fp["filter_manual"] == 1])
+                ]
+                self._manualUndecided = self._trackData[
+                    self._trackData["particle"].isin(
+                        fp.index[fp["filter_manual"] == -1]
+                    )
+                ]
+        self.navigatorStatsChanged.emit()
         self.manualRejectedChanged.emit()
         self.manualAcceptedChanged.emit()
         self.manualUndecidedChanged.emit()
@@ -203,10 +215,13 @@ class Filter(gui.OptionChooser):
     def getFilterFunc(self):
         return functools.partial(
             self.workerFunc,
-            massThresh=self.massThresh, bgThresh=self.bgThresh,
-            minLength=self.minLength, minChangepoints=self.minChangepoints,
+            massThresh=self.massThresh,
+            bgThresh=self.bgThresh,
+            minLength=self.minLength,
+            minChangepoints=self.minChangepoints,
             maxChangepoints=self.maxChangepoints,
-            startEndChangepoints=self.startEndChangepoints)
+            startEndChangepoints=self.startEndChangepoints,
+        )
 
 
 QtQml.qmlRegisterType(Filter, "SmFretBondTime.Templates", 1, 0, "Filter")

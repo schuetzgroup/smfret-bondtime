@@ -187,7 +187,8 @@ T.Filter {
                 id: nav
                 cull: true
                 showStatistics: true
-                trackData: root.navigatorData
+                trackData: root.trackData
+                trackStats: root.navigatorStats
                 onTrackAccepted: root.acceptTrack(trackNo)
                 onTrackRejected: root.rejectTrack(trackNo)
             }

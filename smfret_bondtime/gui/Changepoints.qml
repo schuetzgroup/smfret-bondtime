@@ -30,6 +30,7 @@ T.Changepoints {
     property alias previewFrameNumber: nav.previewFrameNumber
     property alias frameCount: nav.frameCount
     property alias trackData: nav.trackData
+    property alias trackStats: nav.trackStats
     property alias currentTrackData: nav.currentTrackData
     property alias currentTrackInfo: nav.currentTrackInfo
     property Item timeTraceFig: null
@@ -134,8 +135,8 @@ T.Changepoints {
             id: batchWorker
             anchors.fill: parent
             dataset: root.datasets
-            argRoles: ["locData"]
-            resultRole: "locData"
+            argRoles: ["locData", "trackStats"]
+            resultRoles: ["locData", "trackStats"]
             displayRole: "source_0"
             errorPolicy: Sdt.BatchWorker.ErrorPolicy.Abort
         }
