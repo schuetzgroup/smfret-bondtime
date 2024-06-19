@@ -1,5 +1,4 @@
 import contextlib
-from decimal import Decimal
 import math
 from pathlib import Path
 import warnings
@@ -13,7 +12,7 @@ from .analysis import calc_track_stats
 special_keys = ["registration"]
 
 
-def load_data(yaml_path, convert_interval=Decimal, special=False, n_frames={}):
+def load_data(yaml_path, convert_interval=float, special=False, n_frames={}):
     from sdt import roi  # noqa F401; needed to load YAML file
 
     yaml_path = Path(yaml_path)
