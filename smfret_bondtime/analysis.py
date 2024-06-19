@@ -1,4 +1,5 @@
 from collections import namedtuple
+from contextlib import suppress
 import copy
 import math
 from typing import Any, Iterable, Mapping, Optional, Tuple
@@ -390,3 +391,15 @@ class LifetimeAnalyzer:
 
         ax.set_xlabel(rec_interval_label(time_unit))
         ax.set_ylabel("average track count")
+
+    @classmethod
+    def load(cls, yaml_path, convert_interval=float, n_frames={}):
+        from .io import load_data
+
+        md, _, track_stats = load_data(yaml_path, convert_interval, n_frames={})
+        kwargs = {}
+        with suppress(KeyError):
+            kwargs["min_track_length"] = md["filter_options"]["min_length"]
+        with suppress(KeyError):
+            kwargs["min_track_count"] = md["fit_options"]["min_count"]
+        return cls(track_stats, **kwargs)
