@@ -13,16 +13,22 @@ class Results(QtQuick.QQuickItem):
     minCount = gui.QmlDefinedProperty()
     nBoot = gui.QmlDefinedProperty()
     randomSeed = gui.QmlDefinedProperty()
+    calcError = gui.SimpleQtProperty(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self._datasets = None
         self._minLength = 1
+        self._calcError = ""
 
-        self._worker = gui.ThreadWorker(self._calcWorker)
+        self._worker = gui.ThreadWorker(self._calcFunc)
         self._worker.finished.connect(self._workerFinished)
         self._worker.error.connect(self._workerError)
+
+    @QtCore.pyqtProperty(QtCore.QObject, constant=True)
+    def _calcWorker(self):
+        return self._worker
 
     @QtCore.pyqtSlot(result=int)
     def genRandomSeed(self):
@@ -31,6 +37,7 @@ class Results(QtQuick.QQuickItem):
 
     @QtCore.pyqtSlot()
     def calculate(self):
+        self.calcError = ""
         self._worker.enabled = True
         self._worker(
             self.datasets,
@@ -42,7 +49,7 @@ class Results(QtQuick.QQuickItem):
         )
 
     @staticmethod
-    def _calcWorker(datasets, fig, minLength, minCount, nBoot, randomSeed):
+    def _calcFunc(datasets, fig, minLength, minCount, nBoot, randomSeed):
         if datasets is None:
             return
 
@@ -80,7 +87,7 @@ class Results(QtQuick.QQuickItem):
         self._worker.enabled = False
 
     def _workerError(self, e):
-        print("error", e)
+        self.calcError = str(e)
         self._worker.enabled = False
 
 

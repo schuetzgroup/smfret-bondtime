@@ -79,4 +79,31 @@ T.Results {
             Layout.fillHeight: true
         }
     }
+
+    Dialog {
+        id: calcDialog
+        title: root.calcError === "" ? "Calculating lifetime…" : "Error"
+        anchors.centerIn: Overlay.overlay
+        closePolicy: Popup.NoAutoClose
+        modal: true
+        standardButtons: root.calcError === "" ? Dialog.Cancel : Dialog.Ok
+        visible: root._calcWorker.busy || root.calcError !== ""
+        contentHeight: Math.max(progBar.implicitHeight, errText.implicitHeight)
+
+        ProgressBar {
+            id: progBar
+            anchors.fill: parent
+            indeterminate: true
+            visible: root._calcWorker.busy
+        }
+        Text {
+            id: errText
+            anchors.fill: parent
+            visible: !root._calcWorker.busy
+            text: root.calcError
+            wrapMode: Text.Wrap
+        }
+
+        onRejected: { root._calcWorker.enabled = false }
+    }
 }
