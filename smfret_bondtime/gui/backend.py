@@ -155,25 +155,36 @@ class Backend(QtCore.QObject):
 
     @staticmethod
     def _saveFunc(yaml_path, yaml_data, datasets):
-        with yaml_path.open("w") as yf:
-            io.yaml.safe_dump(yaml_data, yf)
+        tmp_yaml_path = yaml_path.with_suffix(".tmp.yaml")
+        h5_path = yaml_path.with_suffix(".h5")
+        tmp_h5_path = yaml_path.with_suffix(".tmp.h5")
 
-        import tables
-        import warnings
-        with pd.HDFStore(yaml_path.with_suffix(".h5"), "w") as s, \
-                warnings.catch_warnings():
-            warnings.simplefilter("ignore", tables.NaturalNameWarning)
-            for i in range(datasets.rowCount()):
-                ekey = datasets.get(i, "key")
-                dset = datasets.get(i, "dataset")
-                for j in range(dset.rowCount()):
-                    dkey = dset.get(j, "id")
-                    ld = dset.get(j, "locData")
-                    if isinstance(ld, pd.DataFrame):
-                        s.put(f"/{ekey}/{dkey}/loc", ld)
-                    ts = dset.get(j, "trackStats")
-                    if isinstance(ts, pd.DataFrame):
-                        s.put(f"/{ekey}/{dkey}/track_stats", ts)
+        try:
+            with tmp_yaml_path.open("w") as yf:
+                io.yaml.safe_dump(yaml_data, yf)
+
+            import tables
+            import warnings
+            with pd.HDFStore(tmp_h5_path, "w") as s, \
+                    warnings.catch_warnings():
+                warnings.simplefilter("ignore", tables.NaturalNameWarning)
+                for i in range(datasets.rowCount()):
+                    ekey = datasets.get(i, "key")
+                    dset = datasets.get(i, "dataset")
+                    for j in range(dset.rowCount()):
+                        dkey = dset.get(j, "id")
+                        ld = dset.get(j, "locData")
+                        if isinstance(ld, pd.DataFrame):
+                            s.put(f"/{ekey}/{dkey}/loc", ld)
+                        ts = dset.get(j, "trackStats")
+                        if isinstance(ts, pd.DataFrame):
+                            s.put(f"/{ekey}/{dkey}/track_stats", ts)
+
+            tmp_yaml_path.replace(yaml_path)
+            tmp_h5_path.replace(h5_path)
+        finally:
+            tmp_yaml_path.unlink(missing_ok=True)
+            tmp_h5_path.unlink(missing_ok=True)
 
     @staticmethod
     def _loadFunc(yaml_path):
