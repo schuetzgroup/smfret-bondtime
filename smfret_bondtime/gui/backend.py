@@ -1,14 +1,9 @@
 import contextlib
-import functools
-import math
-import operator
 from pathlib import Path
 
 from PyQt5 import QtCore, QtQml
 import numpy as np
 import pandas as pd
-import scipy.optimize
-import scipy.ndimage
 from sdt import (brightness, changepoint, gui, helper, io, loc, multicolor,
                  spatial)
 import trackpy
