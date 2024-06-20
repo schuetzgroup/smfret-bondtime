@@ -16,6 +16,18 @@ from .sciform_lite import format_val, format_val_unc
 
 
 def calc_track_stats(tracks: pd.DataFrame, n_frames: int) -> pd.DataFrame:
+    if tracks.empty:
+        return pd.DataFrame(
+            columns=[
+                "start",
+                "end",
+                "track_len",
+                "censored",
+                "bg",
+                "mass",
+            ],
+            index=pd.Index([], name="particle"),
+        )
     if "extra_frame" in tracks:
         tracks = tracks[tracks["extra_frame"] == 0]
 
@@ -47,10 +59,16 @@ def apply_filters(
 
 
 def concat_stats(track_stats, filter=True):
-    ret = {
-        k: ts if isinstance(ts, pd.DataFrame) else pd.concat(ts, names=["file"])
-        for k, ts in track_stats.items()
-    }
+    ret = {}
+    for intv, ts in track_stats.items():
+        if isinstance(ts, pd.DataFrame):
+            ret[intv] = ts
+        else:
+            cc = {}
+            for k, t in ts.items():
+                if isinstance(t, pd.DataFrame) and not t.empty:
+                    cc[k] = t
+            ret[intv] = pd.concat(cc, names=["file"])
     if filter:
         return {k: apply_filters(ts) for k, ts in ret.items()}
     return ret
