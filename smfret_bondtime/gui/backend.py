@@ -40,7 +40,6 @@ class Backend(QtCore.QObject):
     def datasets(self):
         return self._datasets
 
-    dataDir = gui.SimpleQtProperty(str)
     locAlgorithm = gui.SimpleQtProperty(str)
     locOptions = gui.SimpleQtProperty("QVariantMap")
     trackOptions = gui.SimpleQtProperty("QVariantMap")
@@ -75,6 +74,28 @@ class Backend(QtCore.QObject):
             return
         self._frameSel.excitation_seq = seq
         self.excitationSeqChanged.emit()
+
+    dataDirChanged = QtCore.pyqtSignal()
+
+    @QtCore.pyqtProperty(str, notify=dataDirChanged)
+    def dataDir(self):
+        return self._dataDir
+
+    @dataDir.setter
+    def dataDir(self, d):
+        if self._dataDir == d:
+            return
+        for i in range(self._datasets.rowCount()):
+            dset = self._datasets.get(i, "dataset")
+            roles = dset.fileRoles
+            for j in range(dset.rowCount()):
+                for r in roles:
+                    old = Path(dset.get(j, r))
+                    with contextlib.suppress(ValueError):
+                        rel = old.relative_to(self._dataDir)
+                        dset.set(j, r, (d / rel).as_posix())
+        self._dataDir = d
+        self.dataDirChanged.emit()
 
     @QtCore.pyqtProperty(QtCore.QObject, constant=True)
     def _worker(self):
