@@ -233,8 +233,12 @@ class LifetimeAnalyzer:
         if rng is None or isinstance(rng, int):
             rng = np.random.default_rng(rng)
 
+        # filter before resampling
+        track_stats = {
+            intv: t[t["track_len"] >= self.min_track_length]
+            for intv, t in concat_stats(self.track_stats).items()
+        }
         blt = []
-        track_stats = concat_stats(self.track_stats)
         for _ in range(n_boot):
             ana = copy.copy(self)
             tstats_samp = {
