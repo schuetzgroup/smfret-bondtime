@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: 2024 Lukas Schrangl <lukas.schrangl@boku.ac.at>
+#
+# SPDX-License-Identifier: CC0-1.0
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
