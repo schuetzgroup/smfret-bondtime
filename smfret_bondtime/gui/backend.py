@@ -8,8 +8,7 @@ from pathlib import Path
 from PyQt5 import QtCore, QtQml
 import numpy as np
 import pandas as pd
-from sdt import (brightness, changepoint, gui, helper, io, loc, multicolor,
-                 spatial)
+from sdt import brightness, changepoint, gui, helper, io, loc, multicolor, spatial
 import trackpy
 
 from ..analysis import calc_track_stats
@@ -190,8 +189,8 @@ class Backend(QtCore.QObject):
 
             import tables
             import warnings
-            with pd.HDFStore(tmp_h5_path, "w") as s, \
-                    warnings.catch_warnings():
+
+            with pd.HDFStore(tmp_h5_path, "w") as s, warnings.catch_warnings():
                 warnings.simplefilter("ignore", tables.NaturalNameWarning)
                 for i in range(datasets.rowCount()):
                     ekey = datasets.get(i, "key")
@@ -213,9 +212,7 @@ class Backend(QtCore.QObject):
 
     @staticmethod
     def _loadFunc(yaml_path):
-        return load_data(
-            yaml_path, convert_interval=None, special=True
-        )
+        return load_data(yaml_path, convert_interval=None, special=True)
 
     def _wrkFinishedOk(self, result):
         self._wrk.enabled = False
@@ -280,8 +277,10 @@ class Backend(QtCore.QObject):
 
         def locFunc(*files):
             try:
-                imgs = {src: io.ImageSequence(f).open()
-                        for src, f in zip(self.datasets.fileRoles, files)}
+                imgs = {
+                    src: io.ImageSequence(f).open()
+                    for src, f in zip(self.datasets.fileRoles, files)
+                }
                 pipe = self.imagePipeline.processFunc(imgs, "corrAcceptor")
                 lc = f(pipe, **opts)
                 orig_frame_count = pipe.orig_frame_count
@@ -291,7 +290,8 @@ class Backend(QtCore.QObject):
             # Since sdt-python 17.1, frame numbers are preserved when using
             # slices of ImageSequence.
             lc["frame"] = self.imagePipeline.frameSelector.renumber_frames(
-                lc["frame"].to_numpy(), "d", n_frames=orig_frame_count)
+                lc["frame"].to_numpy(), "d", n_frames=orig_frame_count
+            )
             return lc
 
         return locFunc
@@ -306,20 +306,30 @@ class Backend(QtCore.QObject):
             t["extra_frame"] = 0
             mini = t.loc[0, "frame"]
             pre = pd.DataFrame(
-                {"frame": np.arange(max(0, mini - nExtra), mini),
-                 "extra_frame": 1, "particle": p, "interp": 1,
-                 "x": t.loc[0, "x"], "y": t.loc[0, "y"]})
+                {
+                    "frame": np.arange(max(0, mini - nExtra), mini),
+                    "extra_frame": 1,
+                    "particle": p,
+                    "interp": 1,
+                    "x": t.loc[0, "x"],
+                    "y": t.loc[0, "y"],
+                }
+            )
             i = t.index[-1]
             maxi = t.loc[i, "frame"]
             post = pd.DataFrame(
-                {"frame": np.arange(maxi + 1,
-                                    min(maxi + nExtra + 1, nFrames)),
-                 "extra_frame": 2, "particle": p, "interp": 1,
-                 "x": t.loc[i, "x"], "y": t.loc[i, "y"]})
+                {
+                    "frame": np.arange(maxi + 1, min(maxi + nExtra + 1, nFrames)),
+                    "extra_frame": 2,
+                    "particle": p,
+                    "interp": 1,
+                    "x": t.loc[i, "x"],
+                    "y": t.loc[i, "y"],
+                }
+            )
             a = pd.concat([pre, t, post], ignore_index=True)
             trc_s.append(a)
         return pd.concat(trc_s, ignore_index=True)
-
 
     @QtCore.pyqtSlot(result=QtCore.QVariant)
     def getTrackFunc(self):
@@ -342,13 +352,13 @@ class Backend(QtCore.QObject):
                 trc = spatial.interpolate_coords(trc)
 
                 try:
-                    imgs = {src: io.ImageSequence(f).open()
-                            for src, f in zip(self.datasets.fileRoles, files)}
+                    imgs = {
+                        src: io.ImageSequence(f).open()
+                        for src, f in zip(self.datasets.fileRoles, files)
+                    }
                     pipe = self.imagePipeline.processFunc(imgs, "corrAcceptor")
                     trc = self.trackExtraFrames(trc, extra, len(pipe))
-                    brightness.from_raw_image(
-                        trc, pipe, radius=3, mask="circle"
-                    )
+                    brightness.from_raw_image(trc, pipe, radius=3, mask="circle")
                     trc_stats = calc_track_stats(trc, len(pipe))
                 except Exception:
                     trc_stats = pd.DataFrame(
@@ -384,8 +394,8 @@ class Backend(QtCore.QObject):
             cps = []
             st["changepoints"] = -1
             for p, (idx, mass) in helper.split_dataframe(
-                    td, "particle", ["mass"], type="array_list",
-                    keep_index=True, sort=False):
+                td, "particle", ["mass"], type="array_list", keep_index=True, sort=False
+            ):
                 c = cp_det.find_changepoints(mass, **opts)
                 s = self.indices_to_segments(c, len(mass))
                 cps.append(pd.Series(s, index=idx))

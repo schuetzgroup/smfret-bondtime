@@ -32,8 +32,7 @@ class Changepoints(QtQuick.QQuickItem):
         except IndexError:
             ax = fig.add_subplot()
         ax.cla()
-        changepoint.plot_changepoints(
-            d, cp, time=self.currentTrackData["frame"], ax=ax)
+        changepoint.plot_changepoints(d, cp, time=self.currentTrackData["frame"], ax=ax)
         ax.set_ylim(d.min(), d.max())
         ax.axvline(self.currentTrackInfo["start"], color="g")
         ax.axvline(self.currentTrackInfo["end"], color="r")

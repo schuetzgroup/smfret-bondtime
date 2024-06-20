@@ -16,8 +16,10 @@ class LifetimeImagePipeline(gui.BasicImagePipeline):
     def __init__(self, parent: QtCore.QObject = None):
         super().__init__(parent)
         self._bleedThrough = {"background": 200.0, "factor": 0.0, "smooth": 1.0}
-        self._channels = {"donor": {"roi": None, "source": "source_0"},
-                          "acceptor": {"roi": None, "source": "source_0"}}
+        self._channels = {
+            "donor": {"roi": None, "source": "source_0"},
+            "acceptor": {"roi": None, "source": "source_0"},
+        }
         self.frameSelector = multicolor.FrameSelector("")
         self._registrator = multicolor.Registrator()
         self._registrator.channel_names = list(self.channels)
@@ -75,8 +77,9 @@ class LifetimeImagePipeline(gui.BasicImagePipeline):
             if r is not None:
                 seq = r(seq)
             if channel == "donor":
-                seq = self._registrator(seq, channel="donor",
-                                        cval=self._bleedThrough["background"])
+                seq = self._registrator(
+                    seq, channel="donor", cval=self._bleedThrough["background"]
+                )
 
             # Remember frame count. Necessary to adjust frame numbers after
             # localization in slices. See `Backend.getLocateFunc`.
@@ -100,8 +103,7 @@ class LifetimeImagePipeline(gui.BasicImagePipeline):
                     noBg = scipy.ndimage.gaussian_filter(noBg, smt)
                 return acceptor - noBg * bt
 
-            seq = helper.Pipeline(
-                corr, d, a, propagate_attrs={"orig_frame_count"})
+            seq = helper.Pipeline(corr, d, a, propagate_attrs={"orig_frame_count"})
             return seq
 
 
