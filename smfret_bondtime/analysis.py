@@ -75,9 +75,7 @@ LifetimeResult = namedtuple(
 
 class LifetimeAnalyzer:
     track_stats: (
-        Mapping[Any, pd.DataFrame]
-        | Mapping[Any, Mapping[Any, pd.DataFrame]]
-        | None
+        Mapping[Any, pd.DataFrame] | Mapping[Any, Mapping[Any, pd.DataFrame]] | None
     )
     """Maps recording interval -> track stats or recording interval -> file id -> track
     stats.
@@ -96,9 +94,7 @@ class LifetimeAnalyzer:
     def __init__(
         self,
         track_stats: (
-            Mapping[Any, pd.DataFrame]
-            | Mapping[Any, Mapping[Any, pd.DataFrame]]
-            | None
+            Mapping[Any, pd.DataFrame] | Mapping[Any, Mapping[Any, pd.DataFrame]] | None
         ),
         min_track_length=2,
         min_track_count=10,
