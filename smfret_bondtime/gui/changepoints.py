@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Lukas Schrangl <lukas.schrangl@boku.ac.at>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from PyQt5 import QtCore, QtQuick, QtQml
 from sdt import changepoint, gui
 

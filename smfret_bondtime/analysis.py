@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Lukas Schrangl <lukas.schrangl@boku.ac.at>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from collections import namedtuple
 from contextlib import suppress
 import copy

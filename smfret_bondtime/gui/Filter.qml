@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Lukas Schrangl <lukas.schrangl@boku.ac.at>
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15

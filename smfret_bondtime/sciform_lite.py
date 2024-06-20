@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 Lukas Schrangl <lukas.schrangl@boku.ac.at>
+# SPDX-License-Identifier: BSD-3-Clause
+#
 # SPDX-FileCopyrightText: Copyright (c) 2023 Justin Gerber
 # SPDX-License-Identifier: MIT
 #
