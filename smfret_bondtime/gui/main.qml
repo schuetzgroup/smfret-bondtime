@@ -25,6 +25,7 @@ ApplicationWindow {
             ToolButton {
                 icon.name: "document-open"
                 onClicked: {
+                    workerDialog.title = "Loading…"
                     saveFileDialog.selectExisting = true
                     saveFileDialog.open()
                 }
@@ -32,6 +33,7 @@ ApplicationWindow {
             ToolButton {
                 icon.name: "document-save"
                 onClicked: {
+                    workerDialog.title = "Saving…"
                     if (!backend.saveFile.toString().length) {
                         saveFileDialog.selectExisting = false
                         saveFileDialog.open()
@@ -43,6 +45,7 @@ ApplicationWindow {
             ToolButton {
                 icon.name: "document-save-as"
                 onClicked: {
+                    workerDialog.title = "Saving…"
                     saveFileDialog.selectExisting = false
                     saveFileDialog.open()
                 }
@@ -467,6 +470,55 @@ ApplicationWindow {
         category: "Window"
         property int width: 640
         property int height: 400
+    }
+    Dialog {
+        id: workerDialog
+        anchors.centerIn: Overlay.overlay
+        closePolicy: Popup.NoAutoClose
+        modal: true
+        visible: backend._worker.busy
+        contentHeight: Math.max(progBar.implicitHeight, errText.implicitHeight)
+
+        ProgressBar {
+            id: progBar
+            anchors.fill: parent
+            indeterminate: true
+            visible: backend._worker.busy
+
+            states: [
+                State {
+                    name: "error"
+                    when: backend._workerError !== ""
+                    PropertyChanges {
+                        target: workerDialog
+                        title: "Error"
+                        visible: true
+                    }
+                    PropertyChanges {
+                        target: workerDialogButton
+                        text: "Close"
+                        DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                    }
+                }
+            ]
+        }
+        Text {
+            id: errText
+            anchors.fill: parent
+            text: backend._workerError
+            wrapMode: Text.Wrap
+        }
+
+        footer: DialogButtonBox {
+            // If we used `standardButtons`, we'd get a binding loop on implicitHeight
+            Button {
+                id:workerDialogButton
+                text: "Abort"
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+
+        onRejected: { backend._worker.enabled = false }
     }
     QQDialogs.FileDialog {
         id: saveFileDialog

@@ -9,12 +9,10 @@ from sdt import (brightness, changepoint, gui, helper, io, loc, multicolor,
 import trackpy
 
 from ..analysis import calc_track_stats
-from ..io import load_data
+from ..io import load_data, special_keys
 
 
 class Backend(QtCore.QObject):
-    _specialKeys = ["registration"]
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self._locAlgorithm = ""
@@ -25,13 +23,18 @@ class Backend(QtCore.QObject):
         self._dataDir = ""
         self._datasets = gui.DatasetCollection()
         self._datasets.dataRoles = ["locData", "trackStats"]
-        for k in self._specialKeys:
+        for k in special_keys:
             self._datasets.append(k, special=True)
         self._registrationLocOptions = {}
         self._fitOptions = {}
         self._changepointOptions = {}
         self._saveFile = QtCore.QUrl()
         self._imagePipeline = None
+
+        self._wrk = gui.ThreadWorker(self._workerDispatch)
+        self._wrk.finished.connect(self._wrkFinishedOk)
+        self._wrk.error.connect(self._wrkFinishedError)
+        self._wrkError = ""
 
     @QtCore.pyqtProperty(QtCore.QVariant, constant=True)
     def datasets(self):
@@ -73,8 +76,25 @@ class Backend(QtCore.QObject):
         self._frameSel.excitation_seq = seq
         self.excitationSeqChanged.emit()
 
+    @QtCore.pyqtProperty(QtCore.QObject, constant=True)
+    def _worker(self):
+        return self._wrk
+
+    _workerErrorChanged = QtCore.pyqtSignal()
+
+    @QtCore.pyqtProperty(str, notify=_workerErrorChanged)
+    def _workerError(self):
+        return self._wrkError
+
     @QtCore.pyqtSlot(QtCore.QUrl)
     def save(self, url):
+        if self._wrkError:
+            self._wrkError = ""
+            self._workerErrorChanged.emit()
+        self._wrk.enabled = True
+
+        yaml_path = Path(url.toLocalFile()).with_suffix(".yaml")
+
         dd = self.dataDir
         fl = self._datasets.fileLists
         for dsetFiles in fl.values():
@@ -100,18 +120,52 @@ class Backend(QtCore.QObject):
             "fit_options": self.fitOptions,
         }
 
-        ypath = Path(url.toLocalFile()).with_suffix(".yaml")
-        with ypath.open("w") as yf:
-            io.yaml.safe_dump(data, yf)
+        # write to disk in different thread
+        self._wrk("save", yaml_path, data, self._datasets)
+
+        self.saveFile = QtCore.QUrl.fromLocalFile(str(yaml_path))
+
+    @QtCore.pyqtSlot(QtCore.QUrl, result=QtCore.QVariant)
+    def load(self, url):
+        if self._wrkError:
+            self._wrkError = ""
+            self._workerErrorChanged.emit()
+        self._wrk.enabled = True
+
+        if isinstance(url, QtCore.QUrl):
+            yaml_path = Path(url.toLocalFile())
+        else:
+            yaml_path = Path(url)
+
+        # load in different thread
+        self._wrk("load", yaml_path)
+
+        self.saveFile = QtCore.QUrl.fromLocalFile(str(yaml_path))
+
+    @staticmethod
+    def _workerDispatch(action, *args, **kwargs):
+        if action == "save":
+            ret = __class__._saveFunc(*args, **kwargs)
+        elif action == "load":
+            ret = __class__._loadFunc(*args, **kwargs)
+        else:
+            raise ValueError(f"unknown action {action}")
+
+        return action, ret
+
+    @staticmethod
+    def _saveFunc(yaml_path, yaml_data, datasets):
+        with yaml_path.open("w") as yf:
+            io.yaml.safe_dump(yaml_data, yf)
 
         import tables
         import warnings
-        with pd.HDFStore(ypath.with_suffix(".h5"), "w") as s, \
+        with pd.HDFStore(yaml_path.with_suffix(".h5"), "w") as s, \
                 warnings.catch_warnings():
             warnings.simplefilter("ignore", tables.NaturalNameWarning)
-            for i in range(self._datasets.rowCount()):
-                ekey = self._datasets.get(i, "key")
-                dset = self._datasets.get(i, "dataset")
+            for i in range(datasets.rowCount()):
+                ekey = datasets.get(i, "key")
+                dset = datasets.get(i, "dataset")
                 for j in range(dset.rowCount()):
                     dkey = dset.get(j, "id")
                     ld = dset.get(j, "locData")
@@ -121,20 +175,18 @@ class Backend(QtCore.QObject):
                     if isinstance(ts, pd.DataFrame):
                         s.put(f"/{ekey}/{dkey}/track_stats", ts)
 
-        self.saveFile = QtCore.QUrl.fromLocalFile(str(ypath))
+    @staticmethod
+    def _loadFunc(yaml_path):
+        return load_data(
+            yaml_path, convert_interval=None, special=True
+        )
 
-    @QtCore.pyqtSlot(QtCore.QUrl, result=QtCore.QVariant)
-    def load(self, url):
-        if isinstance(url, QtCore.QUrl):
-            ypath = Path(url.toLocalFile())
-        else:
-            ypath = Path(url)
-        try:
-            data, tracks, trackStats = load_data(
-                ypath, convert_interval=None, special=True
-            )
-        except (FileNotFoundError, RuntimeError):
+    def _wrkFinishedOk(self, result):
+        self._wrk.enabled = False
+        if result[0] != "load":
             return
+
+        data, tracks, trackStats = result[1]
 
         if "channels" in data:
             self.imagePipeline.channels = data["channels"]
@@ -166,8 +218,8 @@ class Backend(QtCore.QObject):
             self._datasets.fileLists = fl
             for i in range(self._datasets.count):
                 self._datasets.set(
-                    i, "special",
-                    self._datasets.get(i, "key") in self._specialKeys)
+                    i, "special", self._datasets.get(i, "key") in special_keys
+                )
             self.registrationDatasetChanged.emit()
 
         for i in range(self._datasets.rowCount()):
@@ -180,7 +232,10 @@ class Backend(QtCore.QObject):
                 with contextlib.suppress(KeyError):
                     dset.set(j, "trackStats", trackStats[intv][fid])
 
-        self.saveFile = QtCore.QUrl.fromLocalFile(str(ypath))
+    def _wrkFinishedError(self, e):
+        self._wrkError = str(e)
+        self._workerErrorChanged.emit()
+        self._wrk.enabled = False
 
     @QtCore.pyqtSlot(result=QtCore.QVariant)
     def getLocateFunc(self):
