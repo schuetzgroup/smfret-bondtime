@@ -48,7 +48,7 @@ def apply_filters(
 
 def concat_stats(track_stats, filter=True):
     ret = {
-        k: ts if isinstance(ts, pd.DataFrame) else pd.concat(ts)
+        k: ts if isinstance(ts, pd.DataFrame) else pd.concat(ts, names=["file"])
         for k, ts in track_stats.items()
     }
     if filter:
