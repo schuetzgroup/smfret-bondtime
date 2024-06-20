@@ -133,6 +133,9 @@ def load_data_v2(yaml_path, special=False, n_frames={}):
         if interval in special_keys:
             continue
         for did, t in trcs.items():
+            if "particle" not in t:
+                # file has not been tracked
+                continue
             f = yaml_data["files"][interval][did][acc_src]
             try:
                 with io.ImageSequence(data_dir / f) as ims:
@@ -176,6 +179,5 @@ def load_data_v3(yaml_path, special=False):
                         track_stats[interval][dkey] = s.get(
                             f"/{interval}/{dkey}/track_stats"
                         )
-
 
     return yaml_data, tracks, track_stats
