@@ -157,9 +157,11 @@ class LifetimeAnalyzer:
             )
             try:
                 fit_res = lifelines.ExponentialFitter().fit_interval_censoring(
-                    count_min,
-                    np.where(cens_min & 2, np.inf, count_min + 1),
-                    entry=self.min_track_length,
+                    count_min - 1,
+                    np.where(cens_min & 2, np.inf, count_min),
+                    entry=(
+                        self.min_track_length - 1 if self.min_track_length > 1 else None
+                    ),
                     # use naive result as initial guess
                     initial_point=np.array(
                         [count_min.mean() - self.min_track_length + 0.5]
