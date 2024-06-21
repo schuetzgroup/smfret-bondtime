@@ -4,3 +4,6 @@
 
 from .analysis import LifetimeAnalyzer, LifetimeResult
 from .io import load_data
+
+
+__version__ = "0.1.0"

@@ -1,6 +1,35 @@
 # SPDX-FileCopyrightText: 2024 Lukas Schrangl <lukas.schrangl@boku.ac.at>
 #
-# SPDX-License-Identifier: CC0-1.0
+# SPDX-License-Identifier: BSD-3-Clause
+
+[project]
+name = "smfret-bondtime"
+description = "Infer receptor–ligand bond lifetimes from smFRET data"
+authors = [
+    { name = "Lukas Schrangl", email = "lukas.schrangl@boku.ac.at" },
+]
+maintainers = [
+    { name = "Lukas Schrangl", email = "lukas.schrangl@boku.ac.at" },
+]
+requires-python = ">=3.10"
+dependencies = [
+    "PyQt5",
+    "lifelines",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "scipy",
+    "sdt-python>=18.3",
+    "trackpy",
+]
+dynamic = ["version"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+
+[tool.setuptools.dynamic]
+version = { attr = "smfret_bondtime.__version__" }
