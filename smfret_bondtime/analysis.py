@@ -418,7 +418,7 @@ class LifetimeAnalyzer:
     def load(cls, yaml_path, convert_interval=float, n_frames={}):
         from .io import load_data
 
-        md, _, track_stats = load_data(yaml_path, convert_interval, n_frames={})
+        md, _, track_stats = load_data(yaml_path, convert_interval, n_frames=n_frames)
         kwargs = {}
         with suppress(KeyError):
             kwargs["min_track_length"] = md["filter_options"]["min_length"]

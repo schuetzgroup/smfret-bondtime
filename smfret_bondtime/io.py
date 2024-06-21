@@ -129,7 +129,7 @@ def load_data_v2(yaml_path, special=False, n_frames={}):
 
     # calculate track stats
     data_dir = Path(yaml_data["data_dir"])
-    n_frames = {str(k): v for k, v in n_frames}
+    n_frames = {str(k): v for k, v in n_frames.items()}
     frame_sel = multicolor.FrameSelector(yaml_data["excitation_seq"])
     acc_src = yaml_data["channels"]["acceptor"]["source"]
     track_stats = {}
