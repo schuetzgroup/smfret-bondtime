@@ -156,7 +156,8 @@ def load_data_v2(yaml_path, special=False, n_frames={}):
                         nf = int(n_frames.search(f).group(1))
                     except Exception:
                         nf = math.inf
-                nf = n_frames.get(interval, math.inf)
+                else:
+                    nf = n_frames.get(interval, math.inf)
             if not math.isfinite(nf):
                 warnings.warn(f"could not determine number of frames for {f}")
             s = calc_track_stats(t, nf)
