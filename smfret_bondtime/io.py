@@ -5,6 +5,7 @@
 import contextlib
 import math
 from pathlib import Path
+import re
 import warnings
 
 import pandas as pd
@@ -128,6 +129,9 @@ def load_data_v2(yaml_path, special=False, n_frames={}):
                             break
 
     # calculate track stats
+    if isinstance(n_frames, str):
+        n_frames = re.compile(n_frames)
+
     data_dir = Path(yaml_data["data_dir"])
     n_frames = {str(k): v for k, v in n_frames.items()}
     frame_sel = multicolor.FrameSelector(yaml_data["excitation_seq"])
@@ -145,6 +149,11 @@ def load_data_v2(yaml_path, special=False, n_frames={}):
                 with io.ImageSequence(data_dir / f) as ims:
                     nf = len(frame_sel.select(ims, "d"))
             except Exception:
+                if isinstance(n_frames, re.Pattern):
+                    try:
+                        nf = int(n_frames.search(f).group(1))
+                    except Exception:
+                        nf = math.inf
                 nf = n_frames.get(interval, math.inf)
             if not math.isfinite(nf):
                 warnings.warn(f"could not determine number of frames for {f}")
