@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from .analysis import LifetimeAnalyzer, LifetimeResult
+from .analysis import LifetimeAnalyzer, LifetimeResult, calc_track_stats
 from .io import load_data
 
 
