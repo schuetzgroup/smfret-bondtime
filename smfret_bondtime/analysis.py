@@ -43,11 +43,12 @@ def calc_track_stats(tracks: pd.DataFrame, n_frames: int) -> pd.DataFrame:
     censored_end = (frame_counts["end"].to_numpy() >= n_frames - 1).astype(int)
     frame_counts["censored"] = censored_start | (censored_end << 1)
 
-    mean_vals = tracks.groupby("particle")[["bg", "mass"]].mean()
-
-    ret = pd.concat([frame_counts, mean_vals], axis=1)
-
-    return ret
+    for key in ("mass", "bg"):
+        if key in tracks:
+            frame_counts[key] = tracks.groupby("particle")[key].mean()
+        else:
+            frame_counts[key] = np.nan
+    return frame_counts
 
 
 def apply_filters(
