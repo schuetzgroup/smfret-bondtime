@@ -208,7 +208,7 @@ class LifetimeAnalyzer:
         self.apparent_lifetimes = pd.DataFrame(
             app_lt,
             columns=["interval", "lifetime_app", "lifetime_app_err", "track_count"],
-        ).sort_values("interval")
+        ).sort_values("interval", ignore_index=True)
 
     @staticmethod
     def lifetime_model(interval, t_on, c_bleach):
