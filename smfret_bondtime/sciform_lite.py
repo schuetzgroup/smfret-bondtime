@@ -17,7 +17,8 @@ def format_val(val: float | Decimal, n_digits: int):
 
 def round_val(val: float | Decimal, n_digits: int):
     val = Decimal(val)
-    return val.round(n_digits)
+    round_digit = get_round_dec_place(val, RoundModeEnum.SIG_FIG, n_digits)
+    return round(val, -round_digit)
 
 
 def format_val_unc(
