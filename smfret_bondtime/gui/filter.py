@@ -120,7 +120,12 @@ class Filter(gui.OptionChooser):
             ax = fig.add_subplot()
         ax.cla()
         changepoint.plot_changepoints(d, cp, time=self.currentTrackData["frame"], ax=ax)
-        ax.set_ylim(d.min(), d.max())
+
+        ymin = np.nanmin(d)
+        ymax = np.nanmax(d)
+        ax.set_ylim(
+            ymin if np.isfinite(ymin) else None, ymax if np.isfinite(ymax) else None
+        )
         ax.axvline(self.currentTrackInfo["start"], color="g")
         ax.axvline(self.currentTrackInfo["end"], color="r")
         ax.set_xlabel("frame")
