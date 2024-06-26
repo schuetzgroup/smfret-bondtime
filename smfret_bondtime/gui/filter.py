@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import functools
+import warnings
 
 from PyQt5 import QtCore, QtQml
 import numpy as np
@@ -167,11 +168,17 @@ class Filter(gui.OptionChooser):
 
     @QtCore.pyqtSlot(int)
     def acceptTrack(self, index):
+        if index not in self._trackStats.index:
+            warnings.warn(f"tried to accept track {index} which does not exist")
+            return
         self._trackStats.loc[index, "filter_manual"] = 0
         self._updateManualTracks()
 
     @QtCore.pyqtSlot(int)
     def rejectTrack(self, index):
+        if index not in self._trackStats.index:
+            warnings.warn(f"tried to reject track {index} which does not exist")
+            return
         self._trackStats.loc[index, "filter_manual"] = 1
         self._updateManualTracks()
 

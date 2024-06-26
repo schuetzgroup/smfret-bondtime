@@ -204,18 +204,24 @@ T.TrackNavigator {
         icon.name: "dialog-ok-apply"
         icon.color: "green"
         onTriggered: {
-            root.trackAccepted(root.currentTrackNo)
-            trackSel.increase()
+            if (root.currentTrackNo >= 0) {
+                root.trackAccepted(root.currentTrackNo)
+                trackSel.increase()
+            }
         }
+        enabled: root.currentTrackNo >= 0
     }
     Action {
         id: rejectAction
         icon.name: "dialog-cancel"
         icon.color: "red"
         onTriggered: {
-            root.trackRejected(root.currentTrackNo)
-            trackSel.increase()
+            if (root.currentTrackNo >= 0) {
+                root.trackRejected(root.currentTrackNo)
+                trackSel.increase()
+            }
         }
+        enabled: root.currentTrackNo >= 0
     }
 }
 
