@@ -161,11 +161,14 @@ def load_data_v2(yaml_path, special=False, n_frames={}):
             if not math.isfinite(nf):
                 warnings.warn(f"could not determine number of frames for {f}")
             s = calc_track_stats(t, nf)
+            grp = t.groupby("particle")
             for col in "filter_param", "filter_manual":
                 if col in t:
-                    s[col] = t.groupby("particle")[col].first()
+                    s[col] = grp[col].first()
                 else:
                     s[col] = -1
+            if "mass_seg" in t:
+                s["changepoints"] = grp["mass_seg"].nunique() - 1
             track_stats.setdefault(interval, {})[did] = s
 
     return yaml_data, tracks, track_stats
