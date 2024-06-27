@@ -31,5 +31,8 @@ build-backend = "setuptools.build_meta"
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 
+[tool.setuptools]
+packages = ["smfret_bondtime"]
+
 [tool.setuptools.dynamic]
 version = { attr = "smfret_bondtime.__version__" }
