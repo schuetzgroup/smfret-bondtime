@@ -4,6 +4,4 @@
 
 from .analysis import LifetimeAnalyzer, LifetimeResult, calc_track_stats
 from .io import load_data
-
-
-__version__ = "0.1.0"
+from ._version import __version__

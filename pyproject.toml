@@ -35,4 +35,4 @@ build-backend = "setuptools.build_meta"
 packages = ["smfret_bondtime"]
 
 [tool.setuptools.dynamic]
-version = { attr = "smfret_bondtime.__version__" }
+version = { attr = "smfret_bondtime._version.__version__" }

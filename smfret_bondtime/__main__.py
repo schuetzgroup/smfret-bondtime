@@ -12,6 +12,7 @@ from sdt import gui
 
 # need to import so that QML types get registered
 from . import gui as bond_gui  # noqa: F401
+from ._version import __version__
 
 
 mpl.rcParams["axes.unicode_minus"] = False
@@ -20,7 +21,7 @@ app = QtWidgets.QApplication(sys.argv)
 app.setOrganizationName("schuetzgroup")
 app.setOrganizationDomain("biophysics.iap.tuwien.ac.at")
 app.setApplicationName("SmFretBondTime")
-app.setApplicationVersion("0.1")
+app.setApplicationVersion(__version__)
 
 argp = argparse.ArgumentParser(description="Analyze bond lifetimes via smFRET data")
 argp.add_argument("save", help="Save file", nargs="?", type=Path)
