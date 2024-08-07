@@ -25,14 +25,14 @@ dependencies = [
 dynamic = ["version"]
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.urls]
+repository = "https://github.com/schuetzgroup/smfret-bondtime"
+
+[tool.hatch.version]
+path = "smfret_bondtime/_version.py"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-
-[tool.setuptools]
-packages = ["smfret_bondtime"]
-
-[tool.setuptools.dynamic]
-version = { attr = "smfret_bondtime._version.__version__" }
