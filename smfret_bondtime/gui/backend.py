@@ -348,6 +348,7 @@ class Backend(QtCore.QObject):
             else:
                 if "extra_frame" in locData:
                     locData = locData[locData["extra_frame"] == 0]
+                locData = locData[~locData["x"].isnull() & ~locData["y"].isnull()]
                 trc = trackpy.link(locData, **opts)
                 trc = spatial.interpolate_coords(trc)
 
