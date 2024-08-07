@@ -19,7 +19,7 @@ dependencies = [
     "numpy",
     "pandas",
     "scipy",
-    "sdt-python>=18.3",
+    "sdt-python>=19.0.1",
     "trackpy",
 ]
 dynamic = ["version"]
