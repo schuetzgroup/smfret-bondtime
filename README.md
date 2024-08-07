@@ -10,24 +10,18 @@ This repository contains a GUI application for tracking single-molecule FRET sig
 
 ## Installation
 
-The following Python dependencies need to be installed in order to use the software:
+Run
 
-- [sdt-python](https://github.com/schuetzgroup/sdt-python) ≥ 18.3
-- PyQt5
-- lifelines
-- matplotlib
-- trackpy
+```pip install numba smfret-bondtime```
 
-Clone this repository or download and unpack an archive thereof.
-Then execute
-
-```pip install -e <path to local repository>```
-
-where `<path to local repository>` is the location the repository has been cloned or unpacked to (i.e., the folder containing this README).
+*numba* is optional, but increases the speed of certain algorithms.
+However, on some Linux setups, *numba* has lead to crashes of the software.
+If this is the case for you, try without *numba*.
 
 ## Starting the GUI
 
-Execute `python -m smfret_bondtime`. This will open a window as shown below.
+Execute `smfret-bondtime` or `python -m smfret_bondtime`.
+This will open a window as shown below.
 
 ![Screenshot after startup](doc/empty.svg)
 
