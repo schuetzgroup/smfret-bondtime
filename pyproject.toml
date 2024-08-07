@@ -24,6 +24,9 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.gui-scripts]
+smfret-bondtime = "smfret_bondtime.gui:run"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
