@@ -127,10 +127,6 @@ ApplicationWindow {
 
                     Layout.fillWidth: false
                     Layout.fillHeight: true
-                    // not sure why this is needed, but otherwise implicitWidth
-                    // is 0... (Qt 5.15.6)
-                    implicitWidth: Math.max(bt.implicitWidth, loc.implicitWidth,
-                                            track.implicitWidth, filter.implicitWidth)
 
                     BleedThrough {
                         id: bt
@@ -152,11 +148,13 @@ ApplicationWindow {
                             bt.smooth = smooth
                             imagePipe.bleedThrough = bt
                         }
+                        Layout.preferredWidth: implicitWidth
                     }
                     Locator {
                         id: loc
                         datasets: backend.datasets
                         previewImage: visible ? imSel.image : null
+                        Layout.preferredWidth: implicitWidth
                     }
                     Tracker {
                         Layout.fillWidth: true
@@ -170,6 +168,7 @@ ApplicationWindow {
                             null
                         )
                         previewFrameNumber: imSel.currentFrame
+                        Layout.preferredWidth: implicitWidth
                     }
                     Changepoints {
                         id: changepoints
@@ -190,8 +189,10 @@ ApplicationWindow {
                                 changepoints.frameCount = imSel.currentFrameCount
                             }
                         }
+                        Layout.preferredWidth: implicitWidth
                     }
                     ScrollView {
+                        clip: true
                         Filter {
                             id: filter
                             datasets: backend.datasets
@@ -210,6 +211,7 @@ ApplicationWindow {
                                 }
                             }
                         }
+                        Layout.minimumWidth: implicitWidth
                     }
                 }
                 Item { width: 2 }
