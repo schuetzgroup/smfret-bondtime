@@ -6,7 +6,12 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 # Quantification of receptor–ligand interaction times via single-molecule FRET
 
-This repository contains a GUI application for tracking single-molecule FRET signals arising from receptor–ligand iteractions (see [Huppa et al. 2010](https://doi.org/10.1038/nature08746) for the principle) and evaluating resulting tracking data using survival analysis.
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12571063.svg)](https://doi.org/10.5281/zenodo.12571063)
+[![PyPI version](https://badge.fury.io/py/smfret-bondtime.svg)](https://badge.fury.io/py/smfret-bondtime)
+
+This repository contains a GUI application for tracking single-molecule FRET signals arising from receptor–ligand iteractions (see [Schrangl et al. 2024](https://doi.org/10.20944/preprints202407.0549.v1) for details) and evaluating resulting tracking data using survival analysis.
+
+If you use this software in a project resulting in a scientific publication, please cite [the software itself](https://doi.org/10.5281/zenodo.12571063) or [the corresponding article](https://doi.org/10.20944/preprints202407.0549.v1).
 
 ## Installation
 
