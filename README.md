@@ -15,9 +15,32 @@ If you use this software in a project resulting in a scientific publication, ple
 
 ## Installation
 
+### Windows-only prerequisite: Install PyQt5
+
+Using the Windows PyQt5 package from PyPI, there is an issue when trying to define datasets in the GUI (possibly due to the extremely outdated Qt5 version provided there).
+A possible workaround is using PyQt5 from [conda-forge](https://conda-forge.org/).
+
+- [Download](https://conda-forge.org/download/) and run the installer
+- Create a new environment with PyQt5 by executing
+
+    ```
+    conda create -n bondtime pyqt
+    ```
+
+    in a Miniforge prompt.
+- Activate the environment by executing
+
+    ```
+    conda activate bondtime
+    ```
+
+### Install the `smfret-bondtime` Python package
+
 Run
 
-```pip install numba smfret-bondtime```
+```
+pip install numba smfret-bondtime
+```
 
 *numba* is optional, but increases the speed of certain algorithms.
 However, on some Linux setups, *numba* has lead to crashes of the software.
