@@ -27,9 +27,6 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
 
-    "License :: OSI Approved :: BSD License",
-    "License :: OSI Approved :: MIT License",
-
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
@@ -41,6 +38,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 readme = "README.md"
+license = "BSD-3-Clause AND MIT AND CC-BY-SA-4.0"
 license-files = { globs = ["LICENSES/*.txt"] }
 
 [project.gui-scripts]
