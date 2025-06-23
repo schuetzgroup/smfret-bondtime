@@ -56,5 +56,8 @@ repository = "https://github.com/schuetzgroup/smfret-bondtime"
 [tool.hatch.version]
 path = "smfret_bondtime/_version.py"
 
+[tool.ruff.lint]
+select = ["NPY201"]
+
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]

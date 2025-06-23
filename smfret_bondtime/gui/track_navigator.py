@@ -11,8 +11,8 @@ class TrackNavigator(QtQuick.QQuickItem):
     _invalidTrackInfo = {
         "start": -1,
         "end": -1,
-        "mass": float("NaN"),
-        "bg": float("NaN"),
+        "mass": float("nan"),
+        "bg": float("nan"),
         "length": 0,
         "status": "undefined",
     }
@@ -93,8 +93,8 @@ class TrackNavigator(QtQuick.QQuickItem):
             self._currentTrackInfo = {
                 "start": int(s.get("start", -1)),
                 "end": int(s.get("end", -1)),
-                "mass": float(s.get("mass", "NaN")),
-                "bg": float(s.get("bg", "NaN")),
+                "mass": float(s.get("mass", "nan")),
+                "bg": float(s.get("bg", "nan")),
                 "length": int(s.get("track_len", 0)),
                 "status": self._statusMap.get(s.get("filter_manual", ""), "undefined"),
             }

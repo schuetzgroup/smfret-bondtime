@@ -169,11 +169,11 @@ class LifetimeAnalyzer:
                     ),
                 )
             except Exception:
-                return np.NaN, np.NaN, len(count_min)
+                return np.nan, np.nan, len(count_min)
         err = (
             np.sqrt(fit_res.variance_matrix_.to_numpy().item()) * interval
             if not cw
-            else np.NaN
+            else np.nan
         )
         return fit_res.lambda_ * interval, err, len(count_min)
 
@@ -252,7 +252,7 @@ class LifetimeAnalyzer:
         except (RuntimeError, TypeError):
             # RuntimeError: fit did not converge
             # TypeError: fewer datapoints than fit parameters
-            self.lifetime = LifetimeResult(np.NaN, np.NaN, np.NaN, np.NaN)
+            self.lifetime = LifetimeResult(np.nan, np.nan, np.nan, np.nan)
 
     def calc_lifetime_bootstrap(self, n_boot, rng=None):
         if rng is None or isinstance(rng, int):
