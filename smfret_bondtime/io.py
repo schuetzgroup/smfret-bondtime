@@ -4,18 +4,92 @@
 
 import collections
 import contextlib
+import copy
 import math
-from pathlib import Path
 import re
 import warnings
+from pathlib import Path
+from typing import Any, Dict, Mapping
 
 import pandas as pd
 from sdt import io, multicolor
 
 from .analysis import calc_track_stats
 
-
 special_keys = ["registration"]
+
+
+def save_data(
+    yaml_path: str | Path,
+    metadata: Dict[str, Any],
+    loc_data: Mapping[Any, Mapping[Any, pd.DataFrame | None]],
+    track_stats: Mapping[Any, Mapping[Any, pd.DataFrame | None]],
+):
+    """Save metadata, single-molecule localizations and track statistics
+
+    Metadata is written to `yaml_path`, localizations and track stats are written
+    to a HDF5 file of the same name, but with suffix ".h5". Within the HDF5 file, the
+    `loc` and `track_stats` underneatch /<dataset id>/<file id>/ contain localization
+    data and track stats, respectively.
+
+    Parameters
+    ----------
+    yaml_path
+        Path to file to save metadata in YAML format. Tracking data is saved in a
+        HDF5 file of the same name, but with suffix ".h5".
+    metadata
+        Data to save into the YAML file. The key "file_version" is added to identify
+        the save file version for loading.
+    loc_data
+        Mapping of experiment id -> file id -> single-molecule localization data
+    tracks
+        Mapping of experiment id -> file id -> track statistics (one track per line)
+    """
+    metadata = copy.deepcopy(metadata)
+    metadata["file_version"] = 3
+    # make paths relative to data_dir
+    dd = Path(metadata["data_dir"])
+    for dsets in metadata["files"].values():
+        for src in dsets.values():
+            new_src = {k: Path(v).relative_to(dd).as_posix() for k, v in src.items()}
+            src.clear()
+            src.update(new_src)
+
+    yaml_path = Path(yaml_path)
+    tmp_yaml_path = yaml_path.with_suffix(".tmp.yaml")
+    h5_path = yaml_path.with_suffix(".h5")
+    tmp_h5_path = yaml_path.with_suffix(".tmp.h5")
+
+    try:
+        with tmp_yaml_path.open("w") as yf:
+            io.yaml.safe_dump(metadata, yf)
+
+        import tables
+
+        with pd.HDFStore(tmp_h5_path, "w") as s, warnings.catch_warnings():
+            warnings.simplefilter("ignore", tables.NaturalNameWarning)
+            for ekey, dset in loc_data.items():
+                for dkey, ld in dset.items():
+                    if isinstance(ld, pd.DataFrame):
+                        s.put(f"/{ekey}/{dkey}/loc", ld)
+                    else:
+                        warnings.warn(
+                            f"no localization data for dataset {ekey}, file {dkey}"
+                        )
+            for ekey, dset in track_stats.items():
+                for dkey, ts in dset.items():
+                    if isinstance(ts, pd.DataFrame):
+                        s.put(f"/{ekey}/{dkey}/track_stats", ts)
+                    else:
+                        warnings.warn(
+                            f"no track stats data for dataset {ekey}, file {dkey}"
+                        )
+
+        tmp_yaml_path.replace(yaml_path)
+        tmp_h5_path.replace(h5_path)
+    finally:
+        tmp_yaml_path.unlink(missing_ok=True)
+        tmp_h5_path.unlink(missing_ok=True)
 
 
 def load_data(yaml_path, convert_interval=float, special=False, n_frames={}):

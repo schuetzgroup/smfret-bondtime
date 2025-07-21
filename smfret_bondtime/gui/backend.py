@@ -5,14 +5,14 @@
 import contextlib
 from pathlib import Path
 
-from PyQt5 import QtCore, QtQml
 import numpy as np
 import pandas as pd
-from sdt import brightness, changepoint, gui, helper, io, loc, multicolor, spatial
 import trackpy
+from PyQt5 import QtCore, QtQml
+from sdt import brightness, changepoint, gui, helper, io, loc, multicolor, spatial
 
 from ..analysis import calc_track_stats
-from ..io import load_data, special_keys
+from ..io import load_data, save_data, special_keys
 
 
 class Backend(QtCore.QObject):
@@ -179,36 +179,21 @@ class Backend(QtCore.QObject):
 
     @staticmethod
     def _saveFunc(yaml_path, yaml_data, datasets):
-        tmp_yaml_path = yaml_path.with_suffix(".tmp.yaml")
-        h5_path = yaml_path.with_suffix(".h5")
-        tmp_h5_path = yaml_path.with_suffix(".tmp.h5")
+        tracks = {}
+        track_stats = {}
+        for i in range(datasets.rowCount()):
+            ekey = datasets.get(i, "key")
+            dset = datasets.get(i, "dataset")
+            for j in range(dset.rowCount()):
+                dkey = dset.get(j, "id")
+                ld = dset.get(j, "locData")
+                if isinstance(ld, pd.DataFrame):
+                    tracks.setdefault(ekey, {})[dkey] = ld
+                ts = dset.get(j, "trackStats")
+                if isinstance(ts, pd.DataFrame):
+                    track_stats.setdefault(ekey, {})[dkey] = ts
 
-        try:
-            with tmp_yaml_path.open("w") as yf:
-                io.yaml.safe_dump(yaml_data, yf)
-
-            import tables
-            import warnings
-
-            with pd.HDFStore(tmp_h5_path, "w") as s, warnings.catch_warnings():
-                warnings.simplefilter("ignore", tables.NaturalNameWarning)
-                for i in range(datasets.rowCount()):
-                    ekey = datasets.get(i, "key")
-                    dset = datasets.get(i, "dataset")
-                    for j in range(dset.rowCount()):
-                        dkey = dset.get(j, "id")
-                        ld = dset.get(j, "locData")
-                        if isinstance(ld, pd.DataFrame):
-                            s.put(f"/{ekey}/{dkey}/loc", ld)
-                        ts = dset.get(j, "trackStats")
-                        if isinstance(ts, pd.DataFrame):
-                            s.put(f"/{ekey}/{dkey}/track_stats", ts)
-
-            tmp_yaml_path.replace(yaml_path)
-            tmp_h5_path.replace(h5_path)
-        finally:
-            tmp_yaml_path.unlink(missing_ok=True)
-            tmp_h5_path.unlink(missing_ok=True)
+        save_data(yaml_path, yaml_data, tracks, track_stats)
 
     @staticmethod
     def _loadFunc(yaml_path):
