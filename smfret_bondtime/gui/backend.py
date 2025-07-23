@@ -197,7 +197,16 @@ class Backend(QtCore.QObject):
 
     @staticmethod
     def _loadFunc(yaml_path):
-        return load_data(yaml_path, convert_interval=None, special=True)
+        md, trc, sts = load_data(yaml_path, convert_interval=None, special=True)
+        # get full paths
+        dd = Path(md["data_dir"])
+        for files in md.get("files", {}).values():
+            for entry in files.values():
+                for src, f in entry.items():
+                    f = Path(f)
+                    if not f.is_absolute():
+                        entry[src] = (dd / f).as_posix()
+        return md, trc, sts
 
     def _wrkFinishedOk(self, result):
         self._wrk.enabled = False

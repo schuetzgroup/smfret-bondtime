@@ -47,13 +47,6 @@ def save_data(
     """
     metadata = copy.deepcopy(metadata)
     metadata["file_version"] = 3
-    # make paths relative to data_dir
-    dd = Path(metadata["data_dir"])
-    for dsets in metadata["files"].values():
-        for src in dsets.values():
-            new_src = {k: Path(v).relative_to(dd).as_posix() for k, v in src.items()}
-            src.clear()
-            src.update(new_src)
 
     yaml_path = Path(yaml_path)
     tmp_yaml_path = yaml_path.with_suffix(".tmp.yaml")
@@ -107,15 +100,6 @@ def load_data(yaml_path, convert_interval=float, special=False, n_frames={}):
         md, tracks, track_stats = load_data_v3(yaml_path, special)
     else:
         raise RuntimeError(f"save file version {version} not supported")
-
-    # get absolute paths
-    dd = Path(md["data_dir"])
-    for files in md.get("files", {}).values():
-        for entry in files.values():
-            for src, f in entry.items():
-                f = Path(f)
-                if not f.is_absolute():
-                    entry[src] = (dd / f).as_posix()
 
     # convert keys which are not special using `convert_interval`
     if callable(convert_interval):
