@@ -156,45 +156,23 @@ def load_data_v2(yaml_path, special=False, n_frames={}):
 
     # older YAML files store special dataset files under "special_files"
     all_files = {**yaml_data.pop("special_files", {}), **yaml_data.pop("files", {})}
-    if all_files:
-        for interval, files in all_files.items():
-            if isinstance(files, list):
-                # older YAML files store list of file names
-                all_files[interval] = {n: f for n, f in enumerate(files)}
-        for files in all_files.values():
-            for entry in files.values():
-                for src, f in entry.items():
-                    # Replace backslashes by forward slashes
-                    # On Windows and sdt-python <= 17.4 paths were saved
-                    # with backslashes
-                    entry[src] = f.replace("\\", "/")
-
-        if not special:
-            for k in special_keys:
-                all_files.pop(k, None)
-
-        yaml_data["files"] = all_files
+    for interval, files in all_files.items():
+        if isinstance(files, list):
+            # older YAML files store list of file names
+            all_files[interval] = {n: f for n, f in enumerate(files)}
 
     h5_path = yaml_path.with_suffix(".h5")
     tracks = {}
     if h5_path.exists():
         with pd.HDFStore(h5_path, "r") as s:
-            for interval, dset in yaml_data["files"].items():
+            for interval, dset in all_files.items():
+                if interval in special_keys:
+                    continue
                 tracks[interval] = {}
                 for dkey, dfiles in dset.items():
                     # new files use the file ID as key
-                    possible_h5_keys = [dkey]
-                    try:
-                        # old files use the file name as key
-                        dpath = Path(dfiles["source_0"]).as_posix()
-                        # try with forward slashes
-                        possible_h5_keys.append(dpath)
-                        # try with backward slashes (sdt-python <= 17.4)
-                        dpath_bs = dpath.replace("/", "\\")
-                        possible_h5_keys.append(dpath_bs)
-                    except Exception:
-                        pass
-
+                    # old files use the file name as key
+                    possible_h5_keys = [dkey, dfiles["source_0"]]
                     for k in possible_h5_keys:
                         try:
                             tracks[interval][dkey] = s.get(f"/{interval}/{k}")
@@ -202,6 +180,23 @@ def load_data_v2(yaml_path, special=False, n_frames={}):
                             pass
                         else:
                             break
+                    else:
+                        warnings.warn(
+                            f"localization data not found for interval {dkey},"
+                            f"file {dfiles['source_0']}"
+                        )
+
+    for files in all_files.values():
+        for entry in files.values():
+            for src, f in entry.items():
+                # On Windows and sdt-python <= 17.4 paths were saved with backslashes
+                entry[src] = f.replace("\\", "/")
+
+    if not special:
+        for k in special_keys:
+            all_files.pop(k, None)
+
+    yaml_data["files"] = all_files
 
     # calculate track stats
     if isinstance(n_frames, str):
@@ -263,14 +258,26 @@ def load_data_v3(yaml_path, special=False):
     if h5_path.exists():
         with pd.HDFStore(h5_path, "r") as s:
             for interval, dset in yaml_data["files"].items():
+                if interval in special_keys:
+                    continue
                 tracks[interval] = {}
                 track_stats[interval] = {}
                 for dkey, dfiles in dset.items():
-                    with contextlib.suppress(KeyError):
+                    try:
                         tracks[interval][dkey] = s.get(f"/{interval}/{dkey}/loc")
-                    with contextlib.suppress(KeyError):
+                    except KeyError:
+                        warnings.warn(
+                            f"localization data not found for interval {dkey},"
+                            f" file {dfiles.get('source_0', f'id {dkey}')}"
+                        )
+                    try:
                         track_stats[interval][dkey] = s.get(
                             f"/{interval}/{dkey}/track_stats"
+                        )
+                    except KeyError:
+                        warnings.warn(
+                            f"track statistics not found for interval {dkey},"
+                            f" file {dfiles.get('source_0', f'id {dkey}')}"
                         )
 
     return yaml_data, tracks, track_stats
