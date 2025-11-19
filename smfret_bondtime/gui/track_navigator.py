@@ -112,5 +112,5 @@ class TrackNavigator(QtQuick.QQuickItem):
 
 
 QtQml.qmlRegisterType(
-    TrackNavigator, "SmFretBondTime.Templates", 1, 0, "TrackNavigator"
+    TrackNavigator, "SmFretBondTime.Templates", 1, 1, "TrackNavigator"
 )

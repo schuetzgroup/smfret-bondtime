@@ -173,4 +173,4 @@ class Results(QtQuick.QQuickItem):
         self._wrk.enabled = False
 
 
-QtQml.qmlRegisterType(Results, "SmFretBondTime.Templates", 1, 0, "Results")
+QtQml.qmlRegisterType(Results, "SmFretBondTime.Templates", 1, 1, "Results")

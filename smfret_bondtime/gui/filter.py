@@ -241,4 +241,4 @@ class Filter(gui.OptionChooser):
         )
 
 
-QtQml.qmlRegisterType(Filter, "SmFretBondTime.Templates", 1, 0, "Filter")
+QtQml.qmlRegisterType(Filter, "SmFretBondTime.Templates", 1, 1, "Filter")
