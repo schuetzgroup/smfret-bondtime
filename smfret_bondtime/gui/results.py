@@ -157,6 +157,7 @@ class Results(QtQuick.QQuickItem):
     def _exporFigureFunc(url, figure):
         figure.savefig(url.toLocalFile())
 
+    @QtCore.Slot(object)
     def _wrkFinishedOk(self, result):
         self._wrk.enabled = False
         if result[0] == "calculate":
@@ -165,6 +166,7 @@ class Results(QtQuick.QQuickItem):
             if not a:
                 self.resultAvailableChanged.emit()
 
+    @QtCore.Slot(object)
     def _wrkFinishedError(self, e):
         self._wrkError = str(e)
         self._workerErrorChanged.emit()

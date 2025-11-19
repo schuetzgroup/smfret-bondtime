@@ -63,6 +63,7 @@ class LifetimeImagePipeline(gui.BasicImagePipeline):
         if modified:
             self.bleedThroughChanged.emit()
 
+    @QtCore.Slot()
     def _doProcessIfCorrAcceptor(self):
         if self.currentChannel == "corrAcceptor":
             self.doProcess()

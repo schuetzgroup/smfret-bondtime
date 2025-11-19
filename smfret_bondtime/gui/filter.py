@@ -182,6 +182,7 @@ class Filter(gui.OptionChooser):
         self._trackStats.loc[index, "filter_manual"] = 1
         self._updateManualTracks()
 
+    @QtCore.Slot()
     def _updateManualTracks(self):
         if self._trackData is None or self._trackStats is None:
             self._navigatorStats = None

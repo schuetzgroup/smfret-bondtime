@@ -208,6 +208,7 @@ class Backend(QtCore.QObject):
                         entry[src] = (dd / f).as_posix()
         return md, trc, sts
 
+    @QtCore.Slot(object)
     def _wrkFinishedOk(self, result):
         self._wrk.enabled = False
         if result[0] != "load":
@@ -259,6 +260,7 @@ class Backend(QtCore.QObject):
                 with contextlib.suppress(KeyError):
                     dset.set(j, "trackStats", trackStats[intv][fid])
 
+    @QtCore.Slot(object)
     def _wrkFinishedError(self, e):
         self._wrkError = str(e)
         self._workerErrorChanged.emit()
