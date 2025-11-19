@@ -164,19 +164,17 @@ T.Results {
 
     QQDialogs.FileDialog {
         id: exportFileDialog
-        selectMultiple: false
-        selectExisting: false
+        fileMode: QQDialogs.FileDialog.SaveFile
         nameFilters: ["Excel (*.xlsx)", "Open Document (*.ods)"]
-        folder: Sdt.Sdt.parentUrl(backend.saveFile)
-        onAccepted: { root.exportResults(fileUrl) }
+        currentFolder: Sdt.Sdt.parentUrl(backend.saveFile)
+        onAccepted: { root.exportResults(selectedFile) }
     }
 
     QQDialogs.FileDialog {
         id: exportFigDialog
-        selectMultiple: false
-        selectExisting: false
+        fileMode: QQDialogs.FileDialog.SaveFile
         nameFilters: ["SVG (*.svg)", "PDF (*.pdf)", "PNG (*.png)"]
-        folder: Sdt.Sdt.parentUrl(backend.saveFile)
-        onAccepted: { root.exportFigure(fileUrl) }
+        currentFolder: Sdt.Sdt.parentUrl(backend.saveFile)
+        onAccepted: { root.exportFigure(selectedFile) }
     }
 }

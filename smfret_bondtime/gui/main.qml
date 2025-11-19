@@ -528,14 +528,18 @@ ApplicationWindow {
     }
     QQDialogs.FileDialog {
         id: saveFileDialog
-        selectMultiple: false
+
+        property bool selectExisting: false
+
+        fileMode: selectExisting ? QQDialogs.FileDialog.OpenFile : QQDialogs.FileDialog.SaveFile
         nameFilters: ["YAML savefile (*.yaml)", "All files (*)"]
-        folder: Sdt.Sdt.parentUrl(backend.saveFile)
+        currentFolder: Sdt.Sdt.parentUrl(backend.saveFile)
+
         onAccepted: {
             if (selectExisting)
-                backend.load(fileUrl)
+                backend.load(selectedFile)
             else
-                backend.save(fileUrl)
+                backend.save(selectedFile)
         }
     }
     Component.onCompleted: {
