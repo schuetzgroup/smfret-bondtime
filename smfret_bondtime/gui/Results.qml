@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
-import QtQuick 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Dialogs 1.3 as QQDialogs
-import QtQuick.Layouts 1.15
-import SdtGui 0.2 as Sdt
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Dialogs as QQDialogs
+import QtQuick.Layouts
+import SdtGui as Sdt
 
-import SmFretBondTime.Templates 1.0 as T
+import SmFretBondTime.Templates as T
 
 T.Results {
     id: root
