@@ -13,7 +13,7 @@ from sdt import changepoint, gui
 # TODO: No need to derive from OptionChooser since there are no intensive
 # tasks that need to be done in a thread
 class Filter(gui.OptionChooser):
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super().__init__(
             argProperties=[
                 "trackData",
