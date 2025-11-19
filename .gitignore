@@ -7,3 +7,4 @@ __pycache__
 /prototype
 *.egg-info
 /dist
+uv.lock
