@@ -12,7 +12,7 @@ import SmFretBondTime.Templates as T
 T.Filter {
     id: root
 
-    property int previewFrameNumber: -1
+    property alias previewFrameNumber: nav.previewFrameNumber
     property list<Item> overlays: [
         Sdt.TrackDisplay {
             trackData: root.manualAccepted
@@ -63,7 +63,6 @@ T.Filter {
     property alias maxChangepoints: maxChangepointsSel.value
     property alias startEndChangepoints: startEndChangepointsCheck.checked
     property Item timeTraceFig: null
-    property alias previewFrameNumber: nav.previewFrameNumber
     property alias frameCount: nav.frameCount
     property alias currentTrackData: nav.currentTrackData
     property alias currentTrackInfo: nav.currentTrackInfo
