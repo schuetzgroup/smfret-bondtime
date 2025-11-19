@@ -148,4 +148,3 @@ T.Changepoints {
         onRejected: { batchWorker.abort() }
     }
 }
-
