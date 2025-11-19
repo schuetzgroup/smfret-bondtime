@@ -1,0 +1,5 @@
+version = 1
+SPDX-PackageName = "smfret-bondtime"
+SPDX-PackageSupplier = "Lukas Schrangl <lukas.schrangl@boku.ac.at>"
+SPDX-PackageDownloadLocation = "https://github.com/schuetzgroup/smfret-bondtime"
+annotations = []
