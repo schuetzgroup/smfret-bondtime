@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from PyQt5 import QtCore, QtQuick, QtQml
+from PySide6 import QtCore, QtQuick, QtQml
 from sdt import changepoint, gui
 
 
@@ -11,13 +11,13 @@ class Changepoints(QtQuick.QQuickItem):
         super().__init__(parent)
         self._datasets = None
 
-    datasets = gui.SimpleQtProperty(QtCore.QVariant)
+    datasets = gui.SimpleQtProperty("QVariant")
     penalty = gui.QmlDefinedProperty()
     currentTrackData = gui.QmlDefinedProperty()
     currentTrackInfo = gui.QmlDefinedProperty()
     timeTraceFig = gui.QmlDefinedProperty()
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def findChangepoints(self):
         if self.timeTraceFig is None or self.currentTrackData is None:
             return

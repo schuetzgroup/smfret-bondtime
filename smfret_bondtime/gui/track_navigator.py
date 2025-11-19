@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from PyQt5 import QtCore, QtQml, QtQuick
+from PySide6 import QtCore, QtQml, QtQuick
 import numpy as np
 from sdt import gui
 
@@ -27,15 +27,15 @@ class TrackNavigator(QtQuick.QQuickItem):
         self._currentTrackData = None
         self._currentTrackInfo = self._invalidTrackInfo
 
-    currentTrackData = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
+    currentTrackData = gui.SimpleQtProperty("QVariant", readOnly=True)
     currentTrackInfo = gui.SimpleQtProperty("QVariantMap", readOnly=True)
 
-    trackAccepted = QtCore.pyqtSignal(int, arguments=["trackNo"])
-    trackRejected = QtCore.pyqtSignal(int, arguments=["trackNo"])
+    trackAccepted = QtCore.Signal(int, arguments=["trackNo"])
+    trackRejected = QtCore.Signal(int, arguments=["trackNo"])
 
-    trackDataChanged = QtCore.pyqtSignal()
+    trackDataChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty(QtCore.QVariant, notify=trackDataChanged)
+    @QtCore.Property("QVariant", notify=trackDataChanged)
     def trackData(self):
         return self._trackData
 
@@ -53,9 +53,9 @@ class TrackNavigator(QtQuick.QQuickItem):
         self.trackDataChanged.emit()
         self.currentTrackDataChanged.emit()
 
-    trackStatsChanged = QtCore.pyqtSignal()
+    trackStatsChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty("QVariant", notify=trackStatsChanged)
+    @QtCore.Property("QVariant", notify=trackStatsChanged)
     def trackStats(self):
         return self._trackStats
 
@@ -71,15 +71,15 @@ class TrackNavigator(QtQuick.QQuickItem):
         self.trackStatsChanged.emit()
         self._trackNoListChanged.emit()
 
-    _trackNoListChanged = QtCore.pyqtSignal()
+    _trackNoListChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty(list, notify=_trackNoListChanged)
+    @QtCore.Property(list, notify=_trackNoListChanged)
     def _trackNoList(self):
         return self._trcList
 
-    currentTrackNoChanged = QtCore.pyqtSignal()
+    currentTrackNoChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty(int, notify=currentTrackNoChanged)
+    @QtCore.Property(int, notify=currentTrackNoChanged)
     def currentTrackNo(self):
         return self._currentTrackNo
 

@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 import sys
 
-from PyQt5 import QtWidgets
+from PySide6 import QtWidgets
 import matplotlib as mpl
 from sdt import gui
 

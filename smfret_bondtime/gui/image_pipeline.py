@@ -6,7 +6,7 @@ import contextlib
 import math
 from typing import Dict
 
-from PyQt5 import QtCore, QtQml
+from PySide6 import QtCore, QtQml
 import numpy as np
 import scipy.ndimage
 from sdt import gui, helper, multicolor
@@ -32,9 +32,9 @@ class LifetimeImagePipeline(gui.BasicImagePipeline):
     channels: Dict = gui.SimpleQtProperty("QVariantMap")
     registrator: multicolor.Registrator = gui.SimpleQtProperty("QVariant")
 
-    excitationSeqChanged = QtCore.pyqtSignal()
+    excitationSeqChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty(str, notify=excitationSeqChanged)
+    @QtCore.Property(str, notify=excitationSeqChanged)
     def excitationSeq(self) -> str:
         return self.frameSelector.excitation_seq
 
@@ -45,9 +45,9 @@ class LifetimeImagePipeline(gui.BasicImagePipeline):
         self.frameSelector.excitation_seq = s
         self.excitationSeqChanged.emit()
 
-    bleedThroughChanged = QtCore.pyqtSignal()
+    bleedThroughChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty("QVariantMap", notify=bleedThroughChanged)
+    @QtCore.Property("QVariantMap", notify=bleedThroughChanged)
     def bleedThrough(self):
         return self._bleedThrough.copy()
 

@@ -4,7 +4,7 @@
 
 import random
 
-from PyQt5 import QtCore, QtQml, QtQuick
+from PySide6 import QtCore, QtQml, QtQuick
 import pandas as pd
 from sdt import gui
 
@@ -33,28 +33,28 @@ class Results(QtQuick.QQuickItem):
 
         self._wrkError = ""
 
-    @QtCore.pyqtProperty(QtCore.QObject, constant=True)
+    @QtCore.Property(QtCore.QObject, constant=True)
     def _worker(self):
         return self._wrk
 
-    resultAvailableChanged = QtCore.pyqtSignal()
+    resultAvailableChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty(bool, notify=resultAvailableChanged)
+    @QtCore.Property(bool, notify=resultAvailableChanged)
     def resultAvailable(self):
         return self._analyzer is not None
 
-    _workerErrorChanged = QtCore.pyqtSignal()
+    _workerErrorChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty(str, notify=_workerErrorChanged)
+    @QtCore.Property(str, notify=_workerErrorChanged)
     def _workerError(self):
         return self._wrkError
 
-    @QtCore.pyqtSlot(result=int)
+    @QtCore.Slot(result=int)
     def genRandomSeed(self):
         # at least on Windows only 32 bit can be used
         return random.randint(0, 1 << 32 - 1)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def calculate(self):
         if self._wrkError:
             self._wrkError = ""
@@ -70,7 +70,7 @@ class Results(QtQuick.QQuickItem):
             self.randomSeed,
         )
 
-    @QtCore.pyqtSlot(QtCore.QUrl)
+    @QtCore.Slot(QtCore.QUrl)
     def exportResults(self, url):
         if self._wrkError:
             self._wrkError = ""
@@ -78,7 +78,7 @@ class Results(QtQuick.QQuickItem):
         self._wrk.enabled = True
         self._wrk("export_results", url, self._analyzer)
 
-    @QtCore.pyqtSlot(QtCore.QUrl)
+    @QtCore.Slot(QtCore.QUrl)
     def exportFigure(self, url):
         if self._wrkError:
             self._wrkError = ""

@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import trackpy
-from PyQt5 import QtCore, QtQml
+from PySide6 import QtCore, QtQml
 from sdt import brightness, changepoint, gui, helper, io, loc, multicolor, spatial
 
 from ..analysis import calc_track_stats
@@ -39,7 +39,7 @@ class Backend(QtCore.QObject):
         self._wrk.error.connect(self._wrkFinishedError)
         self._wrkError = ""
 
-    @QtCore.pyqtProperty(QtCore.QVariant, constant=True)
+    @QtCore.Property("QVariant", constant=True)
     def datasets(self):
         return self._datasets
 
@@ -53,18 +53,18 @@ class Backend(QtCore.QObject):
     saveFile = gui.SimpleQtProperty(QtCore.QUrl)
     imagePipeline = gui.SimpleQtProperty("QVariant")
 
-    registrationDatasetChanged = QtCore.pyqtSignal()
+    registrationDatasetChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty(QtCore.QVariant, notify=registrationDatasetChanged)
+    @QtCore.Property("QVariant", notify=registrationDatasetChanged)
     def registrationDataset(self):
         for i in range(self._datasets.count):
             if self._datasets.get(i, "key") == "registration":
                 return self._datasets.get(i, "dataset")
 
-    excitationSeqChanged = QtCore.pyqtSignal()
+    excitationSeqChanged = QtCore.Signal()
     """:py:attr:`excitationSeq` changed"""
 
-    @QtCore.pyqtProperty(str, notify=excitationSeqChanged)
+    @QtCore.Property(str, notify=excitationSeqChanged)
     def excitationSeq(self) -> str:
         """Excitation sequence. See :py:class:`multicolor.FrameSelector` for
         details. No error checking es performend here.
@@ -78,9 +78,9 @@ class Backend(QtCore.QObject):
         self._frameSel.excitation_seq = seq
         self.excitationSeqChanged.emit()
 
-    dataDirChanged = QtCore.pyqtSignal()
+    dataDirChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty(str, notify=dataDirChanged)
+    @QtCore.Property(str, notify=dataDirChanged)
     def dataDir(self):
         return self._dataDir
 
@@ -100,17 +100,17 @@ class Backend(QtCore.QObject):
         self._dataDir = d
         self.dataDirChanged.emit()
 
-    @QtCore.pyqtProperty(QtCore.QObject, constant=True)
+    @QtCore.Property(QtCore.QObject, constant=True)
     def _worker(self):
         return self._wrk
 
-    _workerErrorChanged = QtCore.pyqtSignal()
+    _workerErrorChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty(str, notify=_workerErrorChanged)
+    @QtCore.Property(str, notify=_workerErrorChanged)
     def _workerError(self):
         return self._wrkError
 
-    @QtCore.pyqtSlot(QtCore.QUrl)
+    @QtCore.Slot(QtCore.QUrl)
     def save(self, url):
         if self._wrkError:
             self._wrkError = ""
@@ -149,7 +149,7 @@ class Backend(QtCore.QObject):
 
         self.saveFile = QtCore.QUrl.fromLocalFile(str(yaml_path))
 
-    @QtCore.pyqtSlot(QtCore.QUrl, result=QtCore.QVariant)
+    @QtCore.Slot(QtCore.QUrl, result="QVariant")
     def load(self, url):
         if self._wrkError:
             self._wrkError = ""
@@ -264,7 +264,7 @@ class Backend(QtCore.QObject):
         self._workerErrorChanged.emit()
         self._wrk.enabled = False
 
-    @QtCore.pyqtSlot(result=QtCore.QVariant)
+    @QtCore.Slot(result="QVariant")
     def getLocateFunc(self):
         f = getattr(loc, self.locAlgorithm).batch
         opts = self.locOptions
@@ -325,7 +325,7 @@ class Backend(QtCore.QObject):
             trc_s.append(a)
         return pd.concat(trc_s, ignore_index=True)
 
-    @QtCore.pyqtSlot(result=QtCore.QVariant)
+    @QtCore.Slot(result="QVariant")
     def getTrackFunc(self):
         opts = self.trackOptions.copy()
         extra = opts.pop("extra_frames", 0)
@@ -376,7 +376,7 @@ class Backend(QtCore.QObject):
         reps = np.diff(indices, prepend=0, append=length)
         return np.repeat(seg, reps)
 
-    @QtCore.pyqtSlot(result=QtCore.QVariant)
+    @QtCore.Slot(result="QVariant")
     def getChangepointFunc(self):
         opts = self.changepointOptions
         cp_det = changepoint.Pelt()

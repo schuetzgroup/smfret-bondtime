@@ -5,7 +5,7 @@
 import functools
 import warnings
 
-from PyQt5 import QtCore, QtQml
+from PySide6 import QtCore, QtQml
 import numpy as np
 from sdt import changepoint, gui
 
@@ -43,16 +43,16 @@ class Filter(gui.OptionChooser):
         self.paramAcceptedChanged.connect(self._updateManualTracks)
         self.showManualChanged.connect(self._updateManualTracks)
 
-    datasets = gui.SimpleQtProperty(QtCore.QVariant)
+    datasets = gui.SimpleQtProperty("QVariant")
     currentTrackData = gui.QmlDefinedProperty()
     currentTrackInfo = gui.QmlDefinedProperty()
     frameCount = gui.QmlDefinedProperty()
-    paramAccepted = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
-    paramRejected = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
-    manualAccepted = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
-    manualRejected = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
-    manualUndecided = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
-    navigatorStats = gui.SimpleQtProperty(QtCore.QVariant, readOnly=True)
+    paramAccepted = gui.SimpleQtProperty("QVariant", readOnly=True)
+    paramRejected = gui.SimpleQtProperty("QVariant", readOnly=True)
+    manualAccepted = gui.SimpleQtProperty("QVariant", readOnly=True)
+    manualRejected = gui.SimpleQtProperty("QVariant", readOnly=True)
+    manualUndecided = gui.SimpleQtProperty("QVariant", readOnly=True)
+    navigatorStats = gui.SimpleQtProperty("QVariant", readOnly=True)
     massThresh = gui.QmlDefinedProperty()
     bgThresh = gui.QmlDefinedProperty()
     minLength = gui.QmlDefinedProperty()
@@ -63,9 +63,9 @@ class Filter(gui.OptionChooser):
 
     showManual = gui.SimpleQtProperty(int)
 
-    trackDataChanged = QtCore.pyqtSignal()
+    trackDataChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty(QtCore.QVariant, notify=trackDataChanged)
+    @QtCore.Property("QVariant", notify=trackDataChanged)
     def trackData(self):
         return self._trackData
 
@@ -76,9 +76,9 @@ class Filter(gui.OptionChooser):
         self._trackData = td
         self.trackDataChanged.emit()
 
-    trackStatsChanged = QtCore.pyqtSignal()
+    trackStatsChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty(QtCore.QVariant, notify=trackStatsChanged)
+    @QtCore.Property("QVariant", notify=trackStatsChanged)
     def trackStats(self):
         return self._trackStats
 
@@ -92,13 +92,13 @@ class Filter(gui.OptionChooser):
         if hadChangepoints != self.hasChangepoints:
             self.hasChangepointsChanged.emit()
 
-    hasChangepointsChanged = QtCore.pyqtSignal()
+    hasChangepointsChanged = QtCore.Signal()
 
-    @QtCore.pyqtProperty(bool, notify=hasChangepointsChanged)
+    @QtCore.Property(bool, notify=hasChangepointsChanged)
     def hasChangepoints(self):
         return self._trackStats is not None and "changepoints" in self._trackStats
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def updatePlot(self):
         if (
             self.timeTraceFig is None
@@ -166,7 +166,7 @@ class Filter(gui.OptionChooser):
         msk = trackData["particle"].isin(fp.index[fp])
         return trackData[msk], trackData[~msk]
 
-    @QtCore.pyqtSlot(int)
+    @QtCore.Slot(int)
     def acceptTrack(self, index):
         if index not in self._trackStats.index:
             warnings.warn(f"tried to accept track {index} which does not exist")
@@ -174,7 +174,7 @@ class Filter(gui.OptionChooser):
         self._trackStats.loc[index, "filter_manual"] = 0
         self._updateManualTracks()
 
-    @QtCore.pyqtSlot(int)
+    @QtCore.Slot(int)
     def rejectTrack(self, index):
         if index not in self._trackStats.index:
             warnings.warn(f"tried to reject track {index} which does not exist")
@@ -227,7 +227,7 @@ class Filter(gui.OptionChooser):
         self.manualAcceptedChanged.emit()
         self.manualUndecidedChanged.emit()
 
-    @QtCore.pyqtSlot(result=QtCore.QVariant)
+    @QtCore.Slot(result="QVariant")
     def getFilterFunc(self):
         return functools.partial(
             self.workerFunc,
