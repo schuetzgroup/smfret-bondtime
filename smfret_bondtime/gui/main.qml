@@ -83,7 +83,6 @@ ApplicationWindow {
                     }
                     Layout.fillWidth: true
                 }
-                Item { height: 5 }
                 Sdt.ChannelConfig {
                     id: channelConfig
                     Layout.fillWidth: true
