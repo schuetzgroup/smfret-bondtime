@@ -167,7 +167,9 @@ T.Results {
         fileMode: QQDialogs.FileDialog.SaveFile
         nameFilters: ["Excel (*.xlsx)", "Open Document (*.ods)"]
         currentFolder: Sdt.Sdt.parentUrl(backend.saveFile)
-        onAccepted: { root.exportResults(selectedFile) }
+        onAccepted: {
+            root.exportResults(selectedFile, selectedNameFilter.extensions[0])
+        }
     }
 
     QQDialogs.FileDialog {
@@ -175,6 +177,8 @@ T.Results {
         fileMode: QQDialogs.FileDialog.SaveFile
         nameFilters: ["SVG (*.svg)", "PDF (*.pdf)", "PNG (*.png)"]
         currentFolder: Sdt.Sdt.parentUrl(backend.saveFile)
-        onAccepted: { root.exportFigure(selectedFile) }
+        onAccepted: {
+            root.exportFigure(selectedFile, selectedNameFilter.extensions[0])
+        }
     }
 }

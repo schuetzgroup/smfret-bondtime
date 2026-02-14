@@ -4,8 +4,8 @@
 
 import random
 
-from PySide6 import QtCore, QtQml, QtQuick
 import pandas as pd
+from PySide6 import QtCore, QtQml, QtQuick
 from sdt import gui
 
 from ..analysis import LifetimeAnalyzer, concat_stats
@@ -70,16 +70,24 @@ class Results(QtQuick.QQuickItem):
             self.randomSeed,
         )
 
-    @QtCore.Slot(QtCore.QUrl)
-    def exportResults(self, url):
+    @QtCore.Slot(QtCore.QUrl, str)
+    def exportResults(self, url, extension):
+        p = url.path()
+        extension = f".{extension}".lower()
+        if not p.lower().endswith(extension):
+            url.setPath(f"{p}{extension}")
         if self._wrkError:
             self._wrkError = ""
             self._workerErrorChanged.emit()
         self._wrk.enabled = True
         self._wrk("export_results", url, self._analyzer)
 
-    @QtCore.Slot(QtCore.QUrl)
-    def exportFigure(self, url):
+    @QtCore.Slot(QtCore.QUrl, str)
+    def exportFigure(self, url: QtCore.QUrl, extension: str):
+        p = url.path()
+        extension = f".{extension}".lower()
+        if not p.lower().endswith(extension):
+            url.setPath(f"{p}{extension}")
         if self._wrkError:
             self._wrkError = ""
             self._workerErrorChanged.emit()
