@@ -20,7 +20,7 @@ dependencies = [
     "scipy",
     "sdt-python>=19.0.1",
 ]
-dynamic = ["version"]
+version = "2.1.0"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
@@ -37,7 +37,7 @@ classifiers = [
 ]
 readme = "README.md"
 license = "BSD-3-Clause AND MIT AND CC-BY-SA-4.0"
-license-files = { globs = ["LICENSES/*.txt"] }
+license-files = ["LICENSES/*.txt"]
 
 [project.gui-scripts]
 smfret-bondtime = "smfret_bondtime.gui:run"
@@ -53,14 +53,11 @@ gui = [
 ]
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.10.2,<0.11.0"]
+build-backend = "uv_build"
 
 [project.urls]
 repository = "https://github.com/schuetzgroup/smfret-bondtime"
-
-[tool.hatch.version]
-path = "smfret_bondtime/_version.py"
 
 [tool.ruff.lint]
 select = ["NPY201"]
@@ -73,3 +70,8 @@ name = "testpypi"
 url = "https://test.pypi.org/simple/"
 publish-url = "https://test.pypi.org/legacy/"
 explicit = true
+
+[tool.uv.build-backend]
+module-root = ""
+module-name = "smfret_bondtime"
+source-include = ["doc/**"]
