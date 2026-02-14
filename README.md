@@ -15,40 +15,25 @@ If you use this software in a project resulting in a scientific publication, ple
 
 ## Installation
 
-### Windows-only prerequisite: Install PyQt5
+1. Install `uv` according to the [official instructions](https://docs.astral.sh/uv/getting-started/installation/) or using e.g. your Linux distribution's package manager.
+2. Create a folder for your project.
+    Inside this folder, run
 
-Using the Windows PyQt5 package from PyPI, there is an issue when trying to define datasets in the GUI (possibly due to the extremely outdated Qt5 version provided there).
-A possible workaround is using PyQt5 from [conda-forge](https://conda-forge.org/).
-
-- [Download](https://conda-forge.org/download/) and run the installer
-- Create a new environment with PyQt5 by executing
-
-    ```
-    conda create -n bondtime pyqt
+    ```bash
+    uv init
     ```
 
-    in a Miniforge prompt.
-- Activate the environment by executing
+    in a console prompt to create a new project. See the
+    [official guide](https://docs.astral.sh/uv/guides/projects/) for more information.
+3. Add `smfret-bondtime` and the dependencies for the GUI by excecuting
 
+    ```bash
+    uv add 'smfret-bondtime[gui]'
     ```
-    conda activate bondtime
-    ```
-
-### Install the `smfret-bondtime` Python package
-
-Run
-
-```
-pip install numba smfret-bondtime
-```
-
-*numba* is optional, but increases the speed of certain algorithms.
-However, on some Linux setups, *numba* has lead to crashes of the software.
-If this is the case for you, try without *numba*.
 
 ## Starting the GUI
 
-Execute `smfret-bondtime` or `python -m smfret_bondtime`.
+Execute `uv run smfret-bondtime` or `uv run python -m smfret_bondtime`.
 This will open a window as shown below.
 
 ![Screenshot after startup](doc/empty.svg)
