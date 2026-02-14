@@ -192,8 +192,8 @@ T.Filter {
                 showStatistics: true
                 trackData: root.trackData
                 trackStats: root.navigatorStats
-                onTrackAccepted: root.acceptTrack(trackNo)
-                onTrackRejected: root.rejectTrack(trackNo)
+                onTrackAccepted: trackNo => root.acceptTrack(trackNo)
+                onTrackRejected: trackNo => root.rejectTrack(trackNo)
             }
         }
         Sdt.StatusDisplay { status: root.status }
