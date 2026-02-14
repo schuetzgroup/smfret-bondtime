@@ -19,7 +19,6 @@ dependencies = [
     "pandas",
     "scipy",
     "sdt-python>=19.0.1",
-    "trackpy",
 ]
 dynamic = ["version"]
 classifiers = [
@@ -45,8 +44,12 @@ smfret-bondtime = "smfret_bondtime.gui:run"
 
 [project.optional-dependencies]
 gui = [
-    "sdt-python[gui]>=20.1.0",
-    "pyside6>=6.10.0",
+    "sdt-python[gui]>=20.1.2",
+    "pyside6>=6.10.2",
+    "numba>=0.63.1",
+    "trackpy>=0.7",
+    "openpyxl>=3.1.5",
+    "odfpy>=1.4.1",
 ]
 
 [build-system]
