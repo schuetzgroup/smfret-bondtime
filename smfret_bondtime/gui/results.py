@@ -175,8 +175,12 @@ class Results(QtQuick.QQuickItem):
                 self.resultAvailableChanged.emit()
 
     @QtCore.Slot(object)
-    def _wrkFinishedError(self, e):
-        self._wrkError = str(e)
+    def _wrkFinishedError(self, exc):
+        import traceback
+
+        self._wrkError = "".join(
+            traceback.format_exception(None, exc, exc.__traceback__)
+        )
         self._workerErrorChanged.emit()
         self._wrk.enabled = False
 
